@@ -1,0 +1,39 @@
+/* Scheme B typography and neutral text. Semantic colors are set by the
+   preview styler against the V2 task model, including rows created later. */
+QWidget { font-family: "MiSans"; color: #000000; background:transparent; }
+QDialog, QMenu { background:#FFFFFF; }
+QLabel { background: transparent; }
+QMainWindow { background:#F5F6FA; }
+QWidget#titlebar { background: #F5F6FA; }
+QWidget#titlebar > QLabel { padding-left: 6px; padding-right: 6px; }
+QListWidget#sidebar { background:#F5F6FA; border:none; padding:8px 10px; }
+QListWidget#sidebar::item { color:#121722; padding:10px 14px; border-radius:12px; margin-bottom:6px; }
+QListWidget#sidebar::item:hover { background:#EBEFF7; }
+QListWidget#sidebar::item:selected { background:#E0EAFF; color:#246BFD; font-weight:400; }
+QStackedWidget#schemeBWorkspace { background:#FFFFFF; border-radius:16px; }
+QStatusBar { background:#F5F6FA; border:none; }
+QPushButton#shellNavigationButton { background:transparent; border:none; border-radius:7px; padding:0; font-size:22px; color:#374151; }
+QPushButton#shellNavigationButton:hover { background:#E7ECF5; }
+QPushButton#shellNavigationButton:disabled { color:#C0C6D1; }
+QLineEdit#shellSearch { background:#FFFFFF; border:1px solid #DFE3EC; border-radius:10px; padding:0 14px; font-size:13px; color:#000000; }
+QLineEdit#shellSearch:focus { border:1px solid #81A9FF; }
+QComboBox::drop-down { border:none; width:30px; }
+QComboBox::down-arrow { image:none; width:0; height:0; }
+QPushButton#shellCreate { background:#E0EAFF; color:#246BFD; border:none; border-radius:10px; padding:0; font-size:14px; }
+QPushButton#shellCreate:hover { background:#CFDFFF; }
+QFrame#schemeBColumnHeader {
+    background: #F3F5F8;
+    border-bottom: 1px solid #E2E8F0;
+}
+QFrame#schemeBStatCell {
+    background: #F3F5F8;
+    border: none;
+    border-radius: 10px;
+}
+QFrame#InProgressItem QLabel, QFrame#FocusItem QLabel {
+    background: transparent;
+    border: none;
+    padding-left: 6px;
+    padding-right: 6px;
+}
+QTableView::item { padding-left: 7px; padding-right: 7px; }

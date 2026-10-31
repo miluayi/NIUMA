@@ -1,0 +1,100 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 23,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "ui-preview-debug",
+      "displayName": "UI Preview · Qt 5.15 MinGW Debug",
+      "generator": "MinGW Makefiles",
+      "binaryDir": "${sourceDir}/04_program/build/ui-preview-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_COMPILER": "C:/msys64/mingw64/bin/g++.exe",
+        "CMAKE_MAKE_PROGRAM": "C:/msys64/mingw64/bin/mingw32-make.exe",
+        "NIUMA_BUILD_UI_PREVIEW": "ON",
+        "BUILD_TESTING": "ON"
+      },
+      "environment": {
+        "PATH": "C:/msys64/mingw64/bin;C:/msys64/usr/bin;$penv{PATH}"
+      }
+    },
+    {
+      "name": "v3-staging-debug",
+      "displayName": "NIUMA v3 · Isolated Staging Debug",
+      "generator": "MinGW Makefiles",
+      "binaryDir": "${sourceDir}/04_program/build/v3-staging-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_COMPILER": "C:/msys64/mingw64/bin/g++.exe",
+        "CMAKE_MAKE_PROGRAM": "C:/msys64/mingw64/bin/mingw32-make.exe",
+        "NIUMA_BUILD_UI_PREVIEW": "OFF",
+        "NIUMA_BUILD_PRODUCTION": "ON",
+        "BUILD_TESTING": "ON"
+      },
+      "environment": {
+        "PATH": "C:/msys64/mingw64/bin;C:/msys64/usr/bin;$penv{PATH}"
+      }
+    },
+    {
+      "name": "v3-staging-release",
+      "displayName": "NIUMA v3 · Local Delivery Release",
+      "generator": "MinGW Makefiles",
+      "binaryDir": "${sourceDir}/04_program/build/v3-staging-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CXX_COMPILER": "C:/msys64/mingw64/bin/g++.exe",
+        "CMAKE_MAKE_PROGRAM": "C:/msys64/mingw64/bin/mingw32-make.exe",
+        "NIUMA_BUILD_UI_PREVIEW": "OFF",
+        "NIUMA_BUILD_PRODUCTION": "ON",
+        "BUILD_TESTING": "ON"
+      },
+      "environment": {
+        "PATH": "C:/msys64/mingw64/bin;C:/msys64/usr/bin;$penv{PATH}"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "ui-preview-debug",
+      "configurePreset": "ui-preview-debug",
+      "jobs": 4
+    },
+    {
+      "name": "v3-staging-debug",
+      "configurePreset": "v3-staging-debug",
+      "jobs": 4
+    },
+    {
+      "name": "v3-staging-release",
+      "configurePreset": "v3-staging-release",
+      "jobs": 4
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "ui-preview-debug",
+      "configurePreset": "ui-preview-debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "v3-staging-debug",
+      "configurePreset": "v3-staging-debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "v3-staging-release",
+      "configurePreset": "v3-staging-release",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}

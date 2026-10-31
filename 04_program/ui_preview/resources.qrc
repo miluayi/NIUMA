@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/styles">
+        <file alias="scheme_b.qss">../../03_ui_design/styles/scheme_b.qss</file>
+        <file alias="scheme_b_check.svg">../../03_ui_design/styles/scheme_b_check.svg</file>
+    </qresource>
+</RCC>

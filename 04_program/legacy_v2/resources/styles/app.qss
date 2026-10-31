@@ -1,0 +1,101 @@
+/* NIUMA production shell: no page-specific data or layout rules. */
+QWidget {
+    font-family: "MiSans", "MiSans Latin", "MiSans L3", sans-serif;
+    color: #000000;
+    background: transparent;
+}
+
+QMainWindow, QWidget#titlebar, QStatusBar { background: #F5F6FA; border: none; }
+QListWidget#sidebar { background:#F5F6FA; border:none; padding:8px 10px; }
+QListWidget#sidebar::item { color:#121722; padding:10px 14px; border-radius:12px; margin-bottom:6px; }
+QListWidget#sidebar::item:hover { background:#EBEFF7; }
+QListWidget#sidebar::item:selected { background:#E0EAFF; color:#246BFD; font-weight:400; }
+QStackedWidget#appUiWorkspace { background:#FFFFFF; border-radius:16px; }
+
+QPushButton#shellBack, QPushButton#shellForward, QPushButton#shellRefresh { background:transparent; border:none; border-radius:7px; padding:0; font-size:22px; color:#374151; }
+QPushButton#shellBack:hover, QPushButton#shellForward:hover, QPushButton#shellRefresh:hover { background:#E7ECF5; }
+QPushButton#shellBack:disabled, QPushButton#shellForward:disabled { color:#C0C6D1; }
+QLineEdit#shellSearch { background:#FFFFFF; border:1px solid #DFE3EC; border-radius:10px; padding:0 14px; font-size:13px; color:#000000; }
+QLineEdit#shellSearch:focus { border:1px solid #81A9FF; }
+QPushButton#shellCreate { background:#E0EAFF; color:#246BFD; border:none; border-radius:10px; padding:0; font-size:14px; }
+QPushButton#shellCreate:hover { background:#CFDFFF; }
+
+QFrame#InProgressCard, QFrame#Card { background:#FFFFFF; border:1px solid #DCE3EF; border-radius:12px; }
+QFrame#appUiColumnHeader { background:#F5F8FC; border-radius:6px; }
+QFrame#FocusArea { border-radius:12px; }
+
+QPushButton#btnMinimize, QPushButton#btnMaximize, QPushButton#btnClose {
+    background: transparent; color:#1F2937; border:none; border-radius:0; padding:0;
+}
+QPushButton#btnMinimize:hover, QPushButton#btnMaximize:hover { background:#E9EEF5; }
+QPushButton#btnClose:hover { background:#E9EEF5; color:#111827; }
+
+QLineEdit, QTextEdit, QComboBox, QSpinBox, QDateEdit {
+    background:#FFFFFF; border:1px solid #DCE3EF; border-radius:7px;
+    color:#172033; padding:6px 10px; font-size:14px;
+}
+QLineEdit:focus, QTextEdit:focus, QComboBox:focus, QSpinBox:focus, QDateEdit:focus {
+    border:1px solid #2B72EF;
+}
+QComboBox::drop-down, QDateEdit::drop-down {
+    subcontrol-origin:padding; subcontrol-position:right center; border:none; width:30px;
+}
+QComboBox::down-arrow, QDateEdit::down-arrow {
+    image:url(:/icons/arrow-down.svg); width:10px; height:6px;
+}
+QComboBox QAbstractItemView, QCalendarWidget QWidget {
+    background:#FFFFFF; border:1px solid #DCE3EF; selection-background-color:#E0EAFF;
+    selection-color:#246BFD;
+}
+QComboBox QAbstractItemView { outline:none; padding:4px; border-radius:8px; }
+QCheckBox { background:transparent; color:#000000; font-size:14px; spacing:8px; }
+QCheckBox::indicator { width:17px; height:17px; border:1px solid #BAC6D8; border-radius:4px; background:#FFFFFF; }
+QCheckBox::indicator:checked {
+    border:1px solid #2463EB; background:#2463EB; image:url(:/icons/app_check.svg);
+}
+
+QTableView, QTableWidget { background:#FFFFFF; border:none; gridline-color:#DCE3EF; }
+QTableView::item, QTableWidget::item { padding:7px; border-bottom:1px solid #DCE3EF; }
+QHeaderView::section {
+    background:#F5F8FC; color:#000000; font-size:14px; font-weight:700;
+    text-align:center; padding:10px 7px; border:none; border-right:1px solid #DCE3EF;
+}
+QDialog, QMessageBox { background:#FFFFFF; border-radius:12px; }
+QMessageBox QPushButton { border-radius:8px; padding:8px 16px; }
+QFrame#dialogHeader, QFrame#dialogBody, QFrame#dialogFooter, QFrame#detailHeader { background:#FFFFFF; }
+QFrame#dialogFooter { border-top:1px solid #DCE3EF; }
+QScrollArea#detailScroll, QWidget#detailBody { background:#FFFFFF; }
+
+QFrame#periodicTaskListCard { background:#FFFFFF; border:1px solid #DCE3EF; border-radius:12px; }
+QTableWidget#periodicTaskTable::item:selected { background:#EAF1FF; color:#172033; }
+QDialog QLineEdit#periodicTemplateNameEdit { min-height:32px; }
+
+QFrame#referenceListCard { background:#FFFFFF; border:1px solid #DCE3EF; border-radius:12px; }
+QTableView#referenceTable::item:selected { background:#EAF1FF; color:#172033; }
+QDialog QLineEdit#referenceNameEdit { min-height:32px; }
+QLabel#appUiReferenceDetailTitle { color:#172033; font-size:20px; font-weight:700; }
+
+QFrame#achievementStatsCard, QFrame#achievementListCard {
+    background:#FFFFFF; border:1px solid #DCE3EF; border-radius:12px;
+}
+QTableView#achievementTable::item:selected { background:#EAF1FF; color:#172033; }
+QDialog QLineEdit#achievementWorkContentEdit { min-height:32px; }
+
+QFrame#statsCategoryCard, QFrame#statsSourceCard, QFrame#statsTrendCard, QFrame#statsHeatmapCard,
+QFrame#StatCard { background:#FFFFFF; border:1px solid #DCE3EF; border-radius:12px; }
+QTabWidget#statsTabs QTabBar::tab { color:#172033; border-bottom:2px solid transparent; }
+QTabWidget#statsTabs QTabBar::tab:selected { color:#246BFD; border-bottom-color:#246BFD; font-weight:700; }
+
+QFrame#recycleBinCard { background:#FFFFFF; border:1px solid #DCE3EF; border-radius:12px; }
+QTableWidget#recycleBinTable QHeaderView::section { background:#F5F7FA; color:#172033; font-weight:700; }
+QLabel#recycleBinEmptyState { color:#64748B; }
+
+QFrame#workDirCard, QFrame#dictMgmtCard, QFrame#exportCard, QFrame#fontSettingsCard,
+QFrame#dataMgmtCard, QFrame#aboutCard {
+    background:#FFFFFF; border:1px solid #DCE3EF; border-radius:12px;
+}
+QFrame#fontWeightOption { background:#FFFFFF; border:1px solid #DCE3EF; border-radius:8px; }
+QFrame#fontWeightOption:hover { border-color:#9AB8F8; background:#F8FAFF; }
+QListWidget#settingsSourceList, QListWidget#settingsTagList, QListWidget#settingsHandlerList {
+    background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px;
+}

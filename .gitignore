@@ -1,0 +1,74 @@
+# Build and packaging outputs
+**/build/
+**/out/
+**/dist/
+**/.venv/
+**/__pycache__/
+**/*.pyc
+04_program/tools/qt-e2e-venv/
+04_program/tools/pydeps/
+06_test/data/
+06_test/evidence/
+06_test/reports/
+06_test/工作目录/
+
+# CMake-generated files
+**/CMakeFiles/
+**/CMakeCache.txt
+**/cmake_install.cmake
+**/Makefile
+**/*.ninja
+**/.ninja_*
+
+# Real runtime data and logs
+**/Data/
+**/*.log
+**/*.db
+**/*.db-shm
+**/*.db-wal
+**/*.sqlite
+**/*.sqlite3
+
+# Compiled binaries and debug artifacts
+**/*.exe
+**/*.dll
+**/*.pdb
+**/*.lib
+**/*.a
+**/*.obj
+**/*.o
+**/*.so
+**/*.dylib
+
+# Explicit exception: only reviewed, desensitized test fixtures belong here.
+!06_test/fixtures/
+!06_test/fixtures/**
+
+# Local delivery artifacts (keep the latest ZIP on disk)
+/05_product/*
+!/05_product/README.md
+
+# Download MiSans from its official source; do not redistribute the raw pack.
+/03_ui_design/MiSans Global _ALL/**
+!/03_ui_design/MiSans Global _ALL/README.md
+!/03_ui_design/MiSans Global _ALL/font-sources.json
+
+# OS/editor caches and local credentials
+**/.DS_Store
+**/._*
+**/__MACOSX/
+**/*.textClipping
+**/Thumbs.db
+**/Desktop.ini
+**/*.user
+**/*.suo
+**/*.swp
+**/*.tmp
+**/*.bak
+.vs/
+.idea/
+.env
+.env.*
+!.env.example
+*.pem
+*.key

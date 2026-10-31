@@ -1,0 +1,1 @@
+middle=23 end=36 pixel-lists=1

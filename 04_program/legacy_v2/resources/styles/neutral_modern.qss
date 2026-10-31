@@ -1,0 +1,316 @@
+/* ============================================================================
+   NIUMA V3.0 全局 QSS 样式表
+   严格对齐 coding.md 第八节与 qt_implementation_guide.md 第二节
+   字体：MiSans，body 15px
+   禁用：多层 box-shadow / font-weight 500,600 / 非整数字号 / text-transform / letter-spacing
+   ============================================================================ */
+
+/* ----------------------------------------------------------------------------
+   全局样式
+   ---------------------------------------------------------------------------- */
+QWidget {
+    font-family: "MiSans", "MiSans Latin", "MiSans L3", sans-serif;
+    font-size: 15px;
+    color: #0F172A;
+    background-color: #F0F2F5;
+}
+
+QMainWindow {
+    background: #F0F2F5;
+}
+
+/* QLabel 默认透明背景，继承父容器背景色（避免灰色填充） */
+QLabel {
+    background: transparent;
+}
+
+/* ----------------------------------------------------------------------------
+   卡片（对应 .card）
+   ---------------------------------------------------------------------------- */
+QFrame#Card {
+    background: #FFFFFF;
+    border: none;
+    border-radius: 12px;
+}
+
+/* ----------------------------------------------------------------------------
+   输入框（对应 .form-input / .form-select / .form-textarea）
+   ---------------------------------------------------------------------------- */
+QLineEdit, QTextEdit, QComboBox, QSpinBox, QDateEdit {
+    padding: 10px 14px;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    font-size: 15px;
+    background: #FFFFFF;
+    color: #0F172A;
+}
+
+QLineEdit:focus, QTextEdit:focus, QComboBox:focus, QSpinBox:focus, QDateEdit:focus {
+    border: 2px solid #2463EB;
+    padding: 9px 13px;
+}
+
+QLineEdit::placeholder, QTextEdit::placeholder {
+    color: #94A3B8;
+}
+
+QComboBox::drop-down {
+    border: none;
+    width: 24px;
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+}
+
+QComboBox::down-arrow {
+    image: url(:/icons/arrow-down.svg);
+    width: 10px;
+    height: 6px;
+}
+
+QDateEdit::drop-down {
+    border: none;
+    width: 24px;
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+}
+
+QDateEdit::down-arrow {
+    image: url(:/icons/arrow-down.svg);
+    width: 10px;
+    height: 6px;
+}
+
+QComboBox QAbstractItemView {
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    background: #FFFFFF;
+    selection-background-color: #EFF4FF;
+    selection-color: #2463EB;
+    padding: 4px;
+}
+
+/* ----------------------------------------------------------------------------
+   按钮 - 主按钮（对应 .btn-primary）
+   ---------------------------------------------------------------------------- */
+QPushButton#btnPrimary {
+    background: #2463EB;
+    color: white;
+    border: 1px solid #2463EB;
+    border-radius: 8px;
+    padding: 9px 18px;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+QPushButton#btnPrimary:hover {
+    background: #1D4ED8;
+    border-color: #1D4ED8;
+}
+
+QPushButton#btnPrimary:pressed {
+    background: #1D4ED8;
+}
+
+/* ----------------------------------------------------------------------------
+   按钮 - 完成按钮（绿色）
+   ---------------------------------------------------------------------------- */
+QPushButton#btnComplete {
+    background: #16A34A;
+    color: white;
+    border: 1px solid #16A34A;
+    border-radius: 8px;
+    padding: 9px 18px;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+QPushButton#btnComplete:hover {
+    background: #15803D;
+    border-color: #15803D;
+}
+
+/* ----------------------------------------------------------------------------
+   按钮 - 取消完成按钮（红色）
+   ---------------------------------------------------------------------------- */
+QPushButton#btnCancelComplete {
+    background: #DC2626;
+    color: white;
+    border: 1px solid #DC2626;
+    border-radius: 8px;
+    padding: 9px 18px;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+QPushButton#btnCancelComplete:hover {
+    background: #B91C1C;
+    border-color: #B91C1C;
+}
+
+/* ----------------------------------------------------------------------------
+   按钮 - 次要按钮（对应 .btn-secondary）
+   ---------------------------------------------------------------------------- */
+QPushButton#btnSecondary {
+    background: #FFFFFF;
+    color: #475569;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    padding: 9px 18px;
+    font-size: 15px;
+}
+
+QPushButton#btnSecondary:hover {
+    background: #F5F7FA;
+    color: #0F172A;
+    border-color: #CBD5E1;
+}
+
+/* ----------------------------------------------------------------------------
+   按钮 - 幽灵按钮（对应 .btn-ghost）
+   ---------------------------------------------------------------------------- */
+QPushButton#btnGhost {
+    background: transparent;
+    color: #475569;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 9px 18px;
+    font-size: 15px;
+}
+
+QPushButton#btnGhost:hover {
+    background: #F5F7FA;
+    color: #0F172A;
+}
+
+/* ----------------------------------------------------------------------------
+   表格（对应 .data-table）
+   ---------------------------------------------------------------------------- */
+QTableView {
+    border: none;
+    font-size: 14px;
+    background: #FFFFFF;
+    selection-background-color: #F5F7FA;
+    selection-color: #475569;
+    gridline-color: #F1F5F9;
+}
+
+QTableView::item {
+    padding: 12px 14px;
+    border-bottom: 1px solid #F1F5F9;
+    color: #0F172A;
+}
+
+QTableView::item:selected {
+    background: #F5F7FA;
+    color: #0F172A;
+}
+
+QHeaderView::section {
+    background: #F5F7FA;
+    color: #0F172A;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 10px 12px;
+    border: none;
+    border-bottom: 1px solid #E2E8F0;
+}
+
+/* ----------------------------------------------------------------------------
+   滚动条（对应 ::-webkit-scrollbar）
+   ---------------------------------------------------------------------------- */
+QScrollBar:vertical {
+    background: transparent;
+    width: 6px;
+    margin: 0;
+}
+
+QScrollBar:horizontal {
+    background: transparent;
+    height: 6px;
+    margin: 0;
+}
+
+QScrollBar::handle:vertical {
+    background: #CBD5E1;
+    border-radius: 3px;
+    min-height: 30px;
+}
+
+QScrollBar::handle:horizontal {
+    background: #CBD5E1;
+    border-radius: 3px;
+    min-width: 30px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: #94A3B8;
+}
+
+QScrollBar::handle:horizontal:hover {
+    background: #94A3B8;
+}
+
+QScrollBar::add-line, QScrollBar::sub-line {
+    background: none;
+    border: none;
+    height: 0px;
+    width: 0px;
+}
+
+QScrollBar::add-page, QScrollBar::sub-page {
+    background: none;
+}
+
+/* ----------------------------------------------------------------------------
+   侧边栏（对应 .sidebar）
+   ---------------------------------------------------------------------------- */
+QListWidget#sidebar {
+    background: #FFFFFF;
+    border: none;
+    border-right: 1px solid #E2E8F0;
+    outline: none;
+    padding: 12px 8px 8px;
+}
+
+QListWidget#sidebar::item {
+    padding: 11px 14px;
+    border-radius: 8px;
+    color: #0F172A;
+    font-size: 15px;
+    font-weight: 400;
+    margin-bottom: 1px;
+}
+
+QListWidget#sidebar::item:hover {
+    background: #F5F7FA;
+    color: #0F172A;
+}
+
+QListWidget#sidebar::item:selected {
+    background: #EFF4FF;
+    color: #2463EB;
+    font-weight: 700;
+}
+
+/* ----------------------------------------------------------------------------
+   状态栏（对应 .statusbar）
+   ---------------------------------------------------------------------------- */
+QStatusBar {
+    background: #F5F7FA;
+    border-top: 1px solid #E2E8F0;
+    color: #0F172A;
+    font-size: 13px;
+    padding: 0 16px;
+}
+
+QStatusBar::item {
+    border: none;
+}
+
+/* ----------------------------------------------------------------------------
+   对话框（QDialog）
+   ---------------------------------------------------------------------------- */
+QDialog {
+    background: #FFFFFF;
+    border-radius: 12px;
+}

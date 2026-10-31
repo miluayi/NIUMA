@@ -1,0 +1,419 @@
+#include <QApplication>
+#include <QScreen>
+#include <QTextLayout>
+#include <QGlyphRun>
+#include <QThread>
+#include <QComboBox>
+#include <QDateEdit>
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
+#include <QFrame>
+#include <QFontInfo>
+#include <QFontDatabase>
+#include <QRawFont>
+#include <QSet>
+#include <QLabel>
+#include <QSqlQuery>
+#include <QTextStream>
+#include <QListWidget>
+#include <QMouseEvent>
+#include <QScrollArea>
+#include <QScrollBar>
+#include <QPixmap>
+#include <QStackedWidget>
+#include <QLineEdit>
+#include <QPushButton>
+#include <QTableView>
+
+#include "DatabaseManager.h"
+#include "MainWindow.h"
+#include "PathUtil.h"
+#include "SettingsView.h"
+#include "TaskDetailView.h"
+#include "TaskCreateDialog.h"
+#include "ReferenceCreateDialog.h"
+#include "ui/widgets/DragDropArea.h"
+
+static bool capturePopupFrame(QWidget *popup, const QString &directory, const QString &name)
+{
+    if (!popup || !popup->isVisible() || !popup->mask().isEmpty()
+        || !popup->property("nativePopupHandle").toULongLong()) return false;
+    popup->move(popup->screen()->availableGeometry().topLeft()+QPoint(24,24));
+    popup->raise();
+    QApplication::processEvents();
+    QThread::msleep(100);
+    const QPoint corner=popup->mapToGlobal(QPoint());
+    return popup->screen()->grabWindow(0,corner.x()-6,corner.y()-6,64,64)
+        .save(QDir(directory).filePath(name+"-native-frame.png"));
+}
+
+int main(int argc, char *argv[])
+{
+    QApplication app(argc, argv);
+    if (app.arguments().contains(QStringLiteral("--legacy-chrome")))
+        app.setProperty("niumaLegacyWindowChrome",true);
+    const QString root = qEnvironmentVariable("NIUMA_TEST_ROOT");
+    const QString captureDir = qEnvironmentVariable("NIUMA_SCREENSHOT_DIR");
+    if (root.isEmpty() || captureDir.isEmpty()) return 1;
+    qputenv("NIUMA_DATA_DIR", QDir(root).filePath("Data").toUtf8());
+    if (!QDir().mkpath(root) || !QDir().mkpath(captureDir)
+        || !DatabaseManager::instance().initialize(PathUtil::databasePath())) return 2;
+    QSqlQuery fixture(DatabaseManager::instance().database());
+    if (!fixture.exec(QStringLiteral("DELETE FROM task"))) return 29;
+    fixture.prepare(QStringLiteral(
+        "INSERT INTO task (task_no, title, category, source, handler, status, create_time) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?)"));
+    fixture.addBindValue(QStringLiteral("VISUAL-1"));
+    fixture.addBindValue(QStringLiteral("字体与分类标志检查"));
+    fixture.addBindValue(QStringLiteral("查"));
+    fixture.addBindValue(QStringLiteral("测试来源"));
+    fixture.addBindValue(QStringLiteral("本人"));
+    fixture.addBindValue(QStringLiteral("进行中"));
+    fixture.addBindValue(QDate::currentDate().toString("yyyy-MM-dd") + " 10:00:00");
+    if (!fixture.exec()) return 29;
+    const int taskId = fixture.lastInsertId().toInt();
+    const int currentYear = QDate::currentDate().year();
+    fixture.prepare("INSERT INTO task (task_no,title,category,source,handler,status,finish_time,create_time) "
+                    "VALUES (?, ?, '办', '办公室', '张三', '已完成', ?, ?)");
+    for (int day : {1, 2}) {
+        fixture.bindValue(0, QStringLiteral("COMPLETE-%1").arg(3 - day));
+        fixture.bindValue(1, QStringLiteral("完成日期排序验证 %1").arg(day));
+        fixture.bindValue(2, QStringLiteral("%1-02-%2 12:00:00").arg(currentYear).arg(day, 2, 10, QLatin1Char('0')));
+        fixture.bindValue(3, QStringLiteral("%1-01-01 10:00:00").arg(currentYear));
+        if (!fixture.exec()) return 35;
+    }
+    struct HandlerFixture {
+        const char *number;
+        const char *title;
+        const char *handler;
+        const char *status;
+        const char *finished;
+    };
+    const HandlerFixture handlerRows[] = {
+        {"COMPLETE-3", "同日较早完成（09:00）", "李四", "已完成", "02-02T09:00:00"},
+        {"COMPLETE-4", "非本人已完成", "非本人", "已完成", "02-03 12:00:00"},
+        {"COMPLETE-5", "本人已完成", "本人", "已完成", "02-04 12:00:00"},
+        {"OTHERS-1", "他人办理（安一）", "安一", "他人办理", ""},
+        {"OTHERS-2", "他人办理（王五）", "王五", "他人办理", ""}
+    };
+    fixture.prepare("INSERT INTO task (task_no,title,category,source,handler,status,finish_time,create_time) "
+                    "VALUES (?, ?, '办', '办公室', ?, ?, ?, ?)");
+    for (const HandlerFixture &row : handlerRows) {
+        fixture.bindValue(0, QString::fromLatin1(row.number));
+        fixture.bindValue(1, QString::fromUtf8(row.title));
+        fixture.bindValue(2, QString::fromUtf8(row.handler));
+        fixture.bindValue(3, QString::fromUtf8(row.status));
+        fixture.bindValue(4, *row.finished ? QVariant(QStringLiteral("%1-%2").arg(currentYear).arg(row.finished)) : QVariant());
+        fixture.bindValue(5, QStringLiteral("%1-01-01 10:00:00").arg(currentYear));
+        if (!fixture.exec()) return 53;
+    }
+    if (!fixture.exec("DELETE FROM reference_material")) return 36;
+    fixture.prepare("INSERT INTO reference_material (ref_no,name,source,tag,create_time) "
+                    "VALUES (?, ?, '办公室', '政策资料', ?)");
+    for (int year : {currentYear, currentYear - 1}) {
+        fixture.bindValue(0, QStringLiteral("%1-001").arg(year));
+        fixture.bindValue(1, QStringLiteral("%1 年度参考资料").arg(year));
+        fixture.bindValue(2, QStringLiteral("%1-06-01 10:00:00").arg(year));
+        if (!fixture.exec()) return 37;
+    }
+
+    MainWindow window;
+    window.resize(1440, 900);
+    window.show();
+    app.processEvents();
+    window.raise();
+    window.activateWindow();
+    QThread::msleep(150);
+    for (int width : {1440, 1100, 1300}) {
+        window.resize(width, 800);
+        // Synthetic 200% scaling can make the window larger than the monitor;
+        // keep the inspected corner on-screen instead of capturing off-screen black.
+        window.move(window.screen()->availableGeometry().topLeft() + QPoint(24, 24));
+        app.processEvents();
+        QThread::msleep(100);
+        const QPoint corner = window.mapToGlobal(QPoint(0, 0));
+        if (!window.screen()->grabWindow(0, corner.x(), corner.y(), 48, 48).save(
+                QDir(captureDir).filePath(QStringLiteral("native-corner-%1.png").arg(width)))) return 61;
+    }
+    window.resize(1440, 900);
+    app.processEvents();
+    auto *title = window.findChild<QWidget *>(QStringLiteral("titlebar"));
+    auto *logo = window.findChild<QLabel *>(QStringLiteral("titleIcon"));
+    if (!title || !logo || !logo->grab().save(QDir(captureDir).filePath("canonical-logo.png"))
+        || !window.windowIcon().pixmap(32,32).save(QDir(captureDir).filePath("window-logo-32.png"))
+        || !title->grab(QRect(title->width()-160, 0, 160, title->height())).save(
+                QDir(captureDir).filePath("window-controls.png"))) return 63;
+    QFile fontDiagnostics(QDir(captureDir).filePath(QStringLiteral("font-diagnostics.txt")));
+    if (!fontDiagnostics.open(QIODevice::WriteOnly | QIODevice::Text)) return 26;
+    QTextStream fontReport(&fontDiagnostics);
+    fontReport << "MiSans=" << QFontDatabase().styles(QStringLiteral("MiSans")).join(',')
+               << " Latin=" << QFontDatabase().styles(QStringLiteral("MiSans Latin")).join(',')
+               << " L3=" << QFontDatabase().styles(QStringLiteral("MiSans L3")).join(',')
+               << " app=" << QFontInfo(app.font()).family() << '/' << QFontInfo(app.font()).styleName()
+               << " Han=" << QRawFont::fromFont(app.font()).supportsCharacter(0x4EFB)
+               << " Latin=" << QRawFont::fromFont(app.font()).supportsCharacter('N')
+               << " Rare=" << QRawFont::fromFont(app.font()).supportsCharacter(0x20000);
+    const QByteArray fontWeightTable = QRawFont::fromFont(app.font()).fontTable("OS/2");
+    if (fontWeightTable.size() >= 6) {
+        fontReport << " weight="
+                   << (static_cast<unsigned char>(fontWeightTable.at(4)) * 256
+                       + static_cast<unsigned char>(fontWeightTable.at(5)));
+    }
+    fontReport << '\n';
+    QTextLayout mixed(QStringLiteral("任务 NIUMA 0123456789 ，。+-()"), app.font());
+    mixed.beginLayout();
+    mixed.createLine();
+    mixed.endLayout();
+    for (const QGlyphRun &run : mixed.glyphRuns()) {
+        fontReport << "resolved-run=" << run.rawFont().familyName() << '\n';
+        if (run.glyphIndexes().contains(0)) return 62;
+    }
+    const auto loadedFamilies = app.property("appUiLoadedFontFamilies").toStringList();
+    if (!loadedFamilies.contains(QStringLiteral("MiSans"))
+        || !loadedFamilies.contains(QStringLiteral("MiSans Latin"))
+        || !loadedFamilies.contains(QStringLiteral("MiSans L3"))
+        || !QFile::exists(QStringLiteral(":/fonts/MiSans-Normal.ttf"))
+        || !QFile::exists(QStringLiteral(":/fonts/MiSansLatin-Normal.ttf"))
+        || QFontInfo(app.font()).family() != QStringLiteral("Segoe UI")
+        || (!QFontDatabase().families().contains(QStringLiteral("Microsoft YaHei UI"))
+            && !QFontDatabase().families().contains(QStringLiteral("Microsoft YaHei")))
+        || !QRawFont::fromFont(app.font()).supportsCharacter('N')) return 27;
+    if (fontWeightTable.size() < 6
+        || static_cast<unsigned char>(fontWeightTable.at(4)) * 256
+                + static_cast<unsigned char>(fontWeightTable.at(5)) != 400) return 33;
+    QSet<const QWidget *> auditedWidgets;
+    auto *sidebar = window.findChild<QListWidget *>(QStringLiteral("sidebar"));
+    auto *workspace = window.findChild<QStackedWidget *>(QStringLiteral("appUiWorkspace"));
+    if (!sidebar || !workspace || workspace->count() != 8) return 3;
+
+    for (int page = 0; page < workspace->count(); ++page) {
+        const int sidebarRow = page == 7 ? 8 : page;
+        sidebar->setCurrentRow(sidebarRow);
+        app.processEvents();
+        if (workspace->currentIndex() != page) return 4 + page;
+        for (const QWidget *widget : window.findChildren<QWidget *>()) {
+            if (widget->isVisible() && QFontInfo(widget->font()).family() != QStringLiteral("Segoe UI")) {
+                fontReport << "page=" << page << " widget=" << widget->metaObject()->className()
+                           << " object=" << widget->objectName()
+                           << " resolved=" << QFontInfo(widget->font()).family() << '\n';
+                return 28;
+            }
+            if (widget->isVisible() && !auditedWidgets.contains(widget)) {
+                auditedWidgets.insert(widget);
+                const QByteArray weightTable = QRawFont::fromFont(widget->font()).fontTable("OS/2");
+                const int fontWeight = weightTable.size() < 6 ? 0
+                    : static_cast<unsigned char>(weightTable.at(4)) * 256
+                        + static_cast<unsigned char>(weightTable.at(5));
+                if (fontWeight != 400) {
+                    fontReport << "weight=" << fontWeight << " widget=" << widget->metaObject()->className()
+                               << " object=" << widget->objectName() << '\n';
+                    if (widget->objectName() != QStringLiteral("fontWeightSample")) return 34;
+                }
+            }
+        }
+        const QPixmap capture = window.grab();
+        const QString path = QDir(captureDir).filePath(QStringLiteral("page-%1.png").arg(page));
+        if (capture.isNull() || !capture.save(path, "PNG") || !QFileInfo::exists(path)) return 12 + page;
+    }
+
+    sidebar->setCurrentRow(1);
+    app.processEvents();
+    auto *taskStatus = window.findChild<QComboBox *>(QStringLiteral("taskStatusCombo"));
+    auto *taskHandler = window.findChild<QComboBox *>(QStringLiteral("taskHandlerCombo"));
+    auto *taskYear = window.findChild<QComboBox *>(QStringLiteral("taskYearCombo"));
+    auto *taskSearchButton = window.findChild<QPushButton *>(QStringLiteral("taskSearchButton"));
+    auto *taskReset = window.findChild<QPushButton *>(QStringLiteral("taskResetButton"));
+    if (!taskStatus || !taskHandler || !taskYear || !taskSearchButton || !taskReset
+        || taskHandler->findText(QStringLiteral("张三")) < 0) return 38;
+    taskStatus->setCurrentText(QStringLiteral("已完成"));
+    app.processEvents();
+    auto *completedTable = window.findChild<QTableView *>(QStringLiteral("taskTable"));
+    const QStringList completedNumbers = {QStringLiteral("COMPLETE-5"), QStringLiteral("COMPLETE-4"),
+        QStringLiteral("COMPLETE-1"), QStringLiteral("COMPLETE-3"), QStringLiteral("COMPLETE-2")};
+    if (!completedTable || completedTable->model()->rowCount() != completedNumbers.size()) return 54;
+    for (int row = 0; row < completedNumbers.size(); ++row) {
+        if (completedTable->model()->index(row, 0).data().toString() != completedNumbers.at(row)) return 55;
+    }
+    if (taskHandler->itemText(1) != QStringLiteral("本人") || taskHandler->itemText(2) != QStringLiteral("非本人")
+        || taskHandler->findText(QStringLiteral("李四")) >= taskHandler->findText(QStringLiteral("张三"))) return 56;
+    if (!window.grab().save(QDir(captureDir).filePath("task-completed-dates.png"))) return 39;
+    taskHandler->showPopup();
+    app.processEvents();
+    if (!taskHandler->view()->window()->grab().save(QDir(captureDir).filePath("task-handler-options.png"))) return 40;
+    taskHandler->hidePopup();
+    taskHandler->setCurrentText(QStringLiteral("非本人"));
+    app.processEvents();
+    if (completedTable->model()->rowCount() != 4
+        || !window.grab().save(QDir(captureDir).filePath("task-nonself-completed.png"))) return 57;
+    taskStatus->setCurrentIndex(0);
+    app.processEvents();
+    if (completedTable->model()->rowCount() != 6) return 58;
+    for (int row = 0; row < completedTable->model()->rowCount(); ++row) {
+        if (completedTable->model()->index(row, 5).data().toString() == QStringLiteral("本人")) return 59;
+    }
+    if (!window.grab().save(QDir(captureDir).filePath("task-nonself-all-statuses.png"))) return 60;
+    taskStatus->setCurrentText(QStringLiteral("已完成"));
+    QMouseEvent openYear(QEvent::MouseButtonPress,
+                         QPointF(taskYear->width() - 12, taskYear->height() / 2),
+                         Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+    QApplication::sendEvent(taskYear, &openYear);
+    app.processEvents();
+    auto *taskYearPopup = taskYear->findChild<QWidget *>(QStringLiteral("appUiYearPopup"));
+    if (!taskYearPopup || !taskYearPopup->isVisible()
+        || taskYearPopup->findChildren<QPushButton *>(QStringLiteral("appUiYearCell")).size() != 12
+        || !taskYearPopup->grab().save(QDir(captureDir).filePath("task-year-picker.png"))
+        || !capturePopupFrame(taskYearPopup,captureDir,"year-picker")) return 47;
+    taskYear->hidePopup();
+    taskYear->setCurrentText(QString::number(currentYear - 1));
+    app.processEvents();
+    auto *taskTable = window.findChild<QTableView *>(QStringLiteral("taskTable"));
+    if (!taskTable || taskTable->model()->rowCount() != 0) return 48;
+    if (!window.grab().save(QDir(captureDir).filePath("task-previous-year.png"))) return 41;
+    taskReset->click();
+
+    sidebar->setCurrentRow(3);
+    app.processEvents();
+    auto *referenceYear = window.findChild<QComboBox *>(QStringLiteral("referenceYearCombo"));
+    auto *referenceSearch = window.findChild<QPushButton *>(QStringLiteral("referenceSearchButton"));
+    auto *referenceReset = window.findChild<QPushButton *>(QStringLiteral("referenceResetButton"));
+    auto *referenceSource = window.findChild<QComboBox *>(QStringLiteral("referenceSourceCombo"));
+    auto *referenceText = window.findChild<QLineEdit *>(QStringLiteral("referenceSearchEdit"));
+    auto *referenceTable = window.findChild<QTableView *>(QStringLiteral("referenceTable"));
+    if (!referenceYear || !referenceSearch || !referenceReset || !referenceSource || !referenceText || !referenceTable)
+        return 49;
+    referenceYear->showPopup();
+    app.processEvents();
+    auto *referenceYearPopup = referenceYear->findChild<QWidget *>(QStringLiteral("appUiYearPopup"));
+    if (!referenceYearPopup || !referenceYearPopup->grab().save(QDir(captureDir).filePath("reference-year-picker.png")))
+        return 50;
+    referenceYear->hidePopup();
+    referenceYear->setCurrentText(QString::number(currentYear - 1));
+    app.processEvents();
+    if (referenceTable->model()->rowCount() != 1
+        || referenceTable->model()->index(0, 0).data().toString() != QStringLiteral("%1-001").arg(currentYear - 1)
+        || !window.grab().save(QDir(captureDir).filePath("reference-previous-year.png"))) return 51;
+    referenceSource->setCurrentText(QStringLiteral("办公室"));
+    referenceText->setText(QStringLiteral("无匹配编号"));
+    referenceSearch->click();
+    app.processEvents();
+    auto *referenceEmpty = window.findChild<QLabel *>(QStringLiteral("referenceEmptyState"));
+    if (referenceTable->model()->rowCount() != 0 || !referenceEmpty || !referenceEmpty->isVisible()
+        || !window.grab().save(QDir(captureDir).filePath("reference-filter-zero.png"))) return 52;
+    referenceReset->click();
+
+    QFile attachmentFixture(QDir(root).filePath("visual-attachment.txt"));
+    if (!attachmentFixture.open(QIODevice::WriteOnly)) return 42;
+    attachmentFixture.write("Qt visual fixture");
+    attachmentFixture.close();
+    {
+        TaskCreateDialog taskCreate(&window);
+        auto *upload = taskCreate.findChild<DragDropArea *>(QStringLiteral("taskAttachmentArea"));
+        if (!upload || !upload->pasteFiles({attachmentFixture.fileName()})) return 43;
+        taskCreate.show();
+        app.processEvents();
+        if (!capturePopupFrame(&taskCreate,captureDir,"task-create")) return 64;
+        if (!taskCreate.grab().save(QDir(captureDir).filePath("task-red-removal.png"))) return 44;
+        taskCreate.reject();
+    }
+    {
+        ReferenceCreateDialog referenceCreate(&window);
+        auto *upload = referenceCreate.findChild<DragDropArea *>(QStringLiteral("referenceAttachmentArea"));
+        if (!upload || !upload->pasteFiles({attachmentFixture.fileName()})) return 45;
+        referenceCreate.show();
+        app.processEvents();
+        if (!capturePopupFrame(&referenceCreate,captureDir,"reference-create")) return 65;
+        if (!referenceCreate.grab().save(QDir(captureDir).filePath("reference-red-removal.png"))) return 46;
+        referenceCreate.reject();
+    }
+
+    sidebar->setCurrentRow(8);
+    app.processEvents();
+    auto *settings = window.findChild<SettingsView *>();
+    QScrollArea *settingsScroll = nullptr;
+    if (settings) {
+        for (QScrollArea *candidate : window.findChildren<QScrollArea *>()) {
+            if (candidate->widget() == settings) {
+                settingsScroll = candidate;
+                break;
+            }
+        }
+    }
+    auto *exportCard = settings ? settings->findChild<QFrame *>(QStringLiteral("exportCard")) : nullptr;
+    auto *fontCard = settings ? settings->findChild<QFrame *>(QStringLiteral("fontSettingsCard")) : nullptr;
+    auto *dataCard = settings ? settings->findChild<QFrame *>(QStringLiteral("dataMgmtCard")) : nullptr;
+    if (!settingsScroll || !exportCard || !fontCard || !dataCard
+        || !(exportCard->y() < fontCard->y() && fontCard->y() < dataCard->y())) return 20;
+    settingsScroll->verticalScrollBar()->setValue(settingsScroll->verticalScrollBar()->maximum());
+    app.processEvents();
+    const QPixmap fontCardCapture = window.grab();
+    if (fontCardCapture.isNull() || !fontCardCapture.save(
+            QDir(captureDir).filePath(QStringLiteral("settings-font-card.png")), "PNG")) return 21;
+
+    sidebar->setCurrentRow(1);
+    app.processEvents();
+    QComboBox *combo = nullptr;
+    for (QComboBox *candidate : window.findChildren<QComboBox *>()) {
+        if (candidate->isVisible() && candidate->isEnabled()) {
+            combo = candidate;
+            break;
+        }
+    }
+    QDateEdit *dateEdit = nullptr;
+    for (QDateEdit *candidate : window.findChildren<QDateEdit *>()) {
+        if (candidate->isVisible() && candidate->isEnabled()) {
+            dateEdit = candidate;
+            break;
+        }
+    }
+    if (!combo || !dateEdit) return 20;
+    if (!combo->findChild<QWidget *>(QStringLiteral("appUiComboArrow"))) return 21;
+    const QPixmap comboCapture = combo->grab();
+    if (comboCapture.isNull()
+        || !comboCapture.save(QDir(captureDir).filePath(QStringLiteral("combo-control.png")), "PNG")) return 25;
+    const QPoint localDatePoint = dateEdit->rect().center();
+    QMouseEvent datePress(QEvent::MouseButtonPress, QPointF(localDatePoint), Qt::LeftButton,
+                          Qt::LeftButton, Qt::NoModifier);
+    QApplication::sendEvent(dateEdit, &datePress);
+    app.processEvents();
+    auto *datePopup = dateEdit->findChild<QWidget *>(QStringLiteral("appUiDatePopup"));
+    if (!datePopup || !datePopup->isVisible()) return 22;
+    if (!capturePopupFrame(datePopup,captureDir,"date-picker")) return 66;
+    const QPixmap dateCapture = datePopup->grab();
+    if (dateCapture.isNull()
+        || !dateCapture.save(QDir(captureDir).filePath(QStringLiteral("date-popup.png")), "PNG")) return 23;
+
+    TaskDetailView detail(taskId);
+    detail.show();
+    app.processEvents();
+    if (!capturePopupFrame(&detail,captureDir,"task-detail")) return 67;
+    const auto *detailTitle = detail.findChild<QLabel *>(QStringLiteral("appUiDetailTitle"));
+    if (!detailTitle || !detailTitle->isVisible()
+        || QFontInfo(detailTitle->font()).family() != QStringLiteral("Segoe UI")
+        || QFontInfo(detailTitle->font()).pixelSize() != 22) return 30;
+    for (const QWidget *widget : detail.findChildren<QWidget *>()) {
+        if (widget->isVisible() && QFontInfo(widget->font()).family() != QStringLiteral("Segoe UI")) {
+            fontReport << "detail widget=" << widget->metaObject()->className()
+                       << " object=" << widget->objectName()
+                       << " resolved=" << QFontInfo(widget->font()).family() << '\n';
+            return 31;
+        }
+        if (widget->isVisible()) {
+            const QByteArray weightTable = QRawFont::fromFont(widget->font()).fontTable("OS/2");
+            const int fontWeight = weightTable.size() < 6 ? 0
+                : static_cast<unsigned char>(weightTable.at(4)) * 256
+                    + static_cast<unsigned char>(weightTable.at(5));
+            if (fontWeight != 400) {
+                fontReport << "detail weight=" << fontWeight
+                           << " widget=" << widget->metaObject()->className()
+                           << " object=" << widget->objectName() << '\n';
+                return 35;
+            }
+        }
+    }
+    if (!detail.grab().save(QDir(captureDir).filePath(QStringLiteral("task-detail-font.png")), "PNG")) return 32;
+    detail.hide();
+
+    DatabaseManager::instance().close();
+    return 0;
+}

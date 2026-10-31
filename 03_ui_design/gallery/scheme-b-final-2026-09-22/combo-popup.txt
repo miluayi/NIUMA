@@ -1,0 +1,1 @@
+popup=QComboBoxPrivateContainer view=QComboBoxListView size=332x150 rounded-mask=1 styled=1 mask-empty=0 corner-alpha=255,255,255,255

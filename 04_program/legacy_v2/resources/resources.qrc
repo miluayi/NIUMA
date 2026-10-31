@@ -1,0 +1,12 @@
+<RCC>
+    <qresource prefix="/">
+        <file>styles/neutral_modern.qss</file>
+        <file>styles/app.qss</file>
+        <file>icons/nav-settings.svg</file>
+        <file>icons/arrow-down.svg</file>
+        <file>icons/app-icon.svg</file>
+        <file>icons/window-close.svg</file>
+        <file>icons/app_check.svg</file>
+        <file>icons/clear-red.svg</file>
+    </qresource>
+</RCC>
