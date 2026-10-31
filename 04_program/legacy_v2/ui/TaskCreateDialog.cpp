@@ -90,7 +90,7 @@ void TaskCreateDialog::setupUI()
     headerLayout->setSpacing(Spacing::SM);
 
     QLabel *titleLabel = new QLabel(QStringLiteral("新建任务"), headerFrame);
-    QFont titleFont(QStringLiteral("MiSans"), 18, QFont::Normal);
+    QFont titleFont(QStringLiteral("Segoe UI"), 18, QFont::Normal);
     titleLabel->setFont(titleFont);
     titleLabel->setStyleSheet("color: #0F172A; border: none;");
 

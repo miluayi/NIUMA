@@ -80,7 +80,7 @@ void RecycleBinView::setupUI()
 
     QLabel *titleLabel = new QLabel(QStringLiteral("回收站"), this);
     titleLabel->setObjectName("recycleBinTitle");
-    QFont titleFont(QStringLiteral("MiSans"), 22, QFont::Normal);
+    QFont titleFont(QStringLiteral("Segoe UI"), 22, QFont::Normal);
     titleLabel->setFont(titleFont);
     titleLabel->setStyleSheet("color:#0F172A;");
     titleLayout->addWidget(titleLabel);
@@ -88,7 +88,7 @@ void RecycleBinView::setupUI()
     QLabel *subtitleLabel = new QLabel(
         QStringLiteral("已删除任务保留 30 天，过期自动清理"), this);
     subtitleLabel->setObjectName("recycleBinSubtitle");
-    QFont subtitleFont(QStringLiteral("MiSans"), 14);
+    QFont subtitleFont(QStringLiteral("Segoe UI"), 14);
     subtitleLabel->setFont(subtitleFont);
     subtitleLabel->setStyleSheet("color:#0F172A;");
     titleLayout->addWidget(subtitleLabel);
@@ -352,7 +352,7 @@ void RecycleBinView::populateTable()
     QFont bodyFont = table_->font();
     bodyFont.setPixelSize(14);
     bodyFont.setWeight(QFont::Normal);
-    QFont monoFont(QStringLiteral("MiSans"));
+    QFont monoFont(QStringLiteral("Segoe UI"));
     monoFont.setPixelSize(14);
     monoFont.setStyleHint(QFont::Monospace);
 

@@ -92,7 +92,7 @@ QFrame* ReferenceDetailDialog::buildHeader()
 
     titleLabel_ = new QLabel(header);
     titleLabel_->setObjectName("appUiReferenceDetailTitle");
-    QFont titleFont(QStringLiteral("MiSans"), 18, QFont::Normal);
+    QFont titleFont(QStringLiteral("Segoe UI"), 18, QFont::Normal);
     titleLabel_->setFont(titleFont);
     titleLabel_->setStyleSheet("color: #0F172A; border: none;");
     titleLabel_->setWordWrap(false);
@@ -139,7 +139,7 @@ QFrame* ReferenceDetailDialog::buildBasicInfoSection()
     // 编号
     grid->addWidget(createInfoLabel(QStringLiteral("编号")), 0, 0);
     refNoValue_ = createInfoValue(QStringLiteral("-"));
-    refNoValue_->setStyleSheet("font-family: MiSans; font-size: 14px; color: #0F172A; border: none;");
+    refNoValue_->setStyleSheet("font-family: Segoe UI; font-size: 14px; color: #0F172A; border: none;");
     grid->addWidget(refNoValue_, 1, 0);
 
     // 来源

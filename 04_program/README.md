@@ -8,7 +8,7 @@
 - `legacy_v2/application/`：任务、资料、设置、回收站等用例。
 - `legacy_v2/service/`：目录移动、扫描、备份、info 文件和其他业务服务。
 - `legacy_v2/database/`、`models/`、`utils/`：SQLite 访问、数据模型和工具。
-- `legacy_v2/resources/`：正式程序的 QSS、图标与字体。
+- `legacy_v2/resources/`：正式程序的 QSS、图标与许可；使用 Windows 系统字体，不嵌入字体文件。
 
 当前仍保留部分旧版 UI 与数据库的直接耦合；不要将历史目标架构描述成已完成的实现。详细现行行为见 `../01_docs/Technical_Design_V3.0.md`。
 
@@ -18,5 +18,6 @@
 2. 不在本目录放入真实数据库、工作目录、日志或用户备份；测试使用 `../06_test/` 的隔离路径。
 3. 修改后先运行相关 CTest，再运行完整 CTest；界面变化检查 `QWidget::grab()`。Qt 抓图不等同于物理桌面或系统 DPI 验证。
 4. 构建产物、Python 虚拟环境和本地依赖缓存均可清理重建，不作为正式源码。
+5. 纯文档、生成物清理与 Git/GitHub 发布只做相关范围及同步检查，不触发软件构建、全量 CTest、抓图或打包；软件源码、资源或构建行为有变化时才执行对应验证。
 
 需要查看真实实现时，以 `legacy_v2/` 和根目录 `CMakePresets.json` 为准；早期迁移计划存于 `../02_process/` 作为过程记录。

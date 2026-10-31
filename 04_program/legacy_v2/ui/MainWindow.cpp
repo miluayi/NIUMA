@@ -253,7 +253,7 @@ void MainWindow::setupUI()
     sidebar_ = new QListWidget(this);
     sidebar_->setObjectName("sidebar");
     sidebar_->setFixedWidth(220);
-    sidebar_->setFont(QFont(QStringLiteral("MiSans"), 15));
+    sidebar_->setFont(QFont(QStringLiteral("Segoe UI"), 15));
     sidebar_->setIconSize(QSize(18, 18));
     sidebar_->setFocusPolicy(Qt::NoFocus);
     sidebar_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -303,7 +303,7 @@ void MainWindow::setupUI()
     statusLayout->setContentsMargins(16, 0, 16, 0);
     statusLayout->setSpacing(0);
 
-    QFont statusFont(QStringLiteral("MiSans"), 13);
+    QFont statusFont(QStringLiteral("Segoe UI"), 13);
     dbStatusLabel_ = new QLabel("数据库: 就绪", statusContent);
     taskCountLabel_ = new QLabel("任务: 0 条", statusContent);
     workDirLabel_ = new QLabel("工作目录: 未设置", statusContent);

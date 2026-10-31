@@ -1,6 +1,6 @@
 /* NIUMA production shell: no page-specific data or layout rules. */
 QWidget {
-    font-family: "MiSans", "MiSans Latin", "MiSans L3", sans-serif;
+    font-family: "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
     color: #000000;
     background: transparent;
 }

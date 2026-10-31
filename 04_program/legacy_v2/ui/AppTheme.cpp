@@ -605,7 +605,6 @@ void applyWidgetTypography(QWidget *widget, int pixelSize, QFont::Weight weight,
         widget->setProperty("appUiBaseFontStyle", currentStyle);
     }
     QString scaledStyle = scaleFontSizes(widget->property("appUiBaseFontStyle").toString(), scale);
-    scaledStyle.replace(QStringLiteral("MiSans"), QStringLiteral("Segoe UI"), Qt::CaseInsensitive);
     scaledStyle = normalizeStatusColors(removeBoldStyles(scaledStyle));
     if (scaledStyle != currentStyle) widget->setStyleSheet(scaledStyle);
     widget->setProperty("appUiAppliedFontStyle", scaledStyle);
@@ -701,29 +700,10 @@ QString AppTheme::preferredFontFamily(const QStringList &availableFamilies)
 
 void AppTheme::apply(QApplication &app, QWidget &window)
 {
-    static const QStringList bundledFonts = {
-        QStringLiteral(":/fonts/MiSans-Normal.ttf"),
-        QStringLiteral(":/fonts/MiSans-Regular.ttf"),
-        QStringLiteral(":/fonts/MiSans-Medium.ttf"),
-        QStringLiteral(":/fonts/MiSans-Semibold.ttf"),
-        QStringLiteral(":/fonts/MiSansLatin-Normal.ttf"),
-        QStringLiteral(":/fonts/MiSansLatin-Regular.ttf"),
-        QStringLiteral(":/fonts/MiSansLatin-Medium.ttf"),
-        QStringLiteral(":/fonts/MiSansLatin-Semibold.ttf"),
-        QStringLiteral(":/fonts/MiSans-L3.ttf")
-    };
-    QStringList loadedFamilies;
-    for (const QString &fontPath : bundledFonts) {
-        const int fontId = QFontDatabase::addApplicationFont(fontPath);
-        if (fontId >= 0) loadedFamilies.append(QFontDatabase::applicationFontFamilies(fontId));
-    }
-    loadedFamilies.removeDuplicates();
-    app.setProperty("appUiLoadedFontFamilies", loadedFamilies);
-
     const QString fontFamily = preferredFontFamily(QFontDatabase().families());
     app.setProperty("appUiFontFallback", fontFamily != QStringLiteral("Segoe UI"));
     QFont::insertSubstitutions(QStringLiteral("Segoe UI"),
-        {QStringLiteral("Microsoft YaHei UI"), QStringLiteral("Microsoft YaHei"), QStringLiteral("MiSans L3")});
+        {QStringLiteral("Microsoft YaHei UI"), QStringLiteral("Microsoft YaHei")});
     QFont baseFont(fontFamily);
     baseFont.setPixelSize(14);
     baseFont.setStyleName(QStringLiteral("Regular"));
@@ -732,9 +712,7 @@ void AppTheme::apply(QApplication &app, QWidget &window)
     const QString style = readResource(QStringLiteral(":/styles/neutral_modern.qss"))
         + QLatin1Char('\n') + readResource(QStringLiteral(":/styles/app.qss"));
     app.setProperty("appUiBaseApplicationStyle", style);
-    QString desktopStyle = style;
-    desktopStyle.replace(QStringLiteral("MiSans"), QStringLiteral("Segoe UI"), Qt::CaseInsensitive);
-    app.setStyleSheet(desktopStyle);
+    app.setStyleSheet(style);
     if (!window.property("appUiThemeWatcherInstalled").toBool()) {
         auto *watcher = new AppThemeWatcher(app, window);
         app.installEventFilter(watcher);
@@ -777,8 +755,6 @@ void AppTheme::applyTypography(QApplication &app, QWidget &window, int pixelSize
 
     const QString baseStyle = app.property("appUiBaseApplicationStyle").toString();
     QString scaledApplicationStyle = scaleFontSizes(baseStyle, scale);
-    scaledApplicationStyle.replace(QStringLiteral("MiSans"), QStringLiteral("Segoe UI"),
-                                   Qt::CaseInsensitive);
     app.setStyleSheet(normalizeStatusColors(removeBoldStyles(scaledApplicationStyle)));
     applyWidgetTypography(&window, pixelSize, selectedWeight(weight), version);
     for (QWidget *widget : window.findChildren<QWidget *>()) {

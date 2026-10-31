@@ -1,19 +1,7 @@
-# MiSans 字体准备
+# 历史设计字体资料
 
-本地开发资料保留原始字体；公开 Git 仓库仅包含本说明及 `font-sources.json`，不单独再分发字体原包。
+本目录仅在本地保留早期方案 B 的字体原包，属于前期准备资料，不参与当前正式软件构建、加载或交付。公开仓库不分发原始字体文件。
 
-从 [MiSans 官方下载页面](https://hyperos.mi.com/font/zh/download/) 获取 MiSans、MiSans Latin 和 MiSans L3，阅读并遵守 [官方知识产权许可协议](https://hyperos.mi.com/font-download/MiSans字体知识产权许可协议.pdf)。将原包解压到本目录，保持 `font-sources.json` 所列相对仓库根目录的路径。正式资源入口为 `04_program/legacy_v2/resources/fonts.qrc`，共引用 9 个文件。
+正式软件使用 Windows 系统字体 Segoe UI，中文回退至 Microsoft YaHei UI / Microsoft YaHei（微软雅黑）；无需下载、安装或嵌入 MiSans。公开仓库可以在不具备本目录字体文件的情况下构建。
 
-构建前可在仓库根目录执行以下只读校验；清单中的字节数与 SHA-256 对应本项目当前使用的字体版本。官方下载版本若变化，先核实来源和字体行为，再更新清单。
-
-```powershell
-$fonts = Get-Content -LiteralPath '03_ui_design/MiSans Global _ALL/font-sources.json' -Raw | ConvertFrom-Json
-foreach ($font in $fonts) {
-    $file = Get-Item -LiteralPath $font.path -ErrorAction Stop
-    if ($file.Length -ne $font.bytes -or (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash -ne $font.sha256) {
-        throw "字体校验失败：$($font.path)"
-    }
-}
-```
-
-MiSans 为小米提供的第三方字体。使用、嵌入和分发时应保留相关版权及许可信息，并按官方协议标明 MiSans；本说明不替代原始许可。
+早期设计原型与历史截图中的 MiSans 记录仅反映当时状态，不代表当前产品字体要求。

@@ -163,7 +163,7 @@ void PeriodicTaskCreateDialog::setupUI()
     titleLabel_ = new QLabel(
         editingId_ > 0 ? QStringLiteral("编辑周期模板") : QStringLiteral("新建周期模板"),
         headerFrame);
-    QFont titleFont(QStringLiteral("MiSans"), 16, QFont::Normal);
+    QFont titleFont(QStringLiteral("Segoe UI"), 16, QFont::Normal);
     titleLabel_->setFont(titleFont);
     titleLabel_->setStyleSheet("color: #0F172A; border: none;");
 

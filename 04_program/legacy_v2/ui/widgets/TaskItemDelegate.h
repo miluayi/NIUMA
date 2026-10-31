@@ -7,7 +7,7 @@
  *   - 状态列：圆角 pill 标签，按 进行中/已完成/他人办理/已删除 着色
  *   - 任务名称列：重点任务前缀【重点】（红色 #FA423E），QTextDocument 富文本
  *   - 截止日期列：daysLeft <= 3 红色 #DC2626 加粗，无效日期灰色 "—"
- *   - 编号列：MiSans，14px
+ *   - 编号列：Segoe UI，14px
  *   - 天数列：居中
  *
  * 依赖：Qt5 Widgets（QStyledItemDelegate）

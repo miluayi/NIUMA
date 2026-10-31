@@ -113,7 +113,7 @@ void ToastWidget::setupContent(Type type, const QString &message)
     symbolLabel->setStyleSheet(QStringLiteral(
         "color:%1;"
         "font-size:16px;"
-        "font-family:'MiSans';"
+        "font-family:'Segoe UI';"
         "border:none;"
         "background:transparent;"
     ).arg(foreground.name()));
@@ -127,7 +127,7 @@ void ToastWidget::setupContent(Type type, const QString &message)
     messageLabel->setStyleSheet(QStringLiteral(
         "color:%1;"
         "font-size:15px;"
-        "font-family:'MiSans';"
+        "font-family:'Segoe UI';"
         "border:none;"
         "background:transparent;"
     ).arg(foreground.name()));

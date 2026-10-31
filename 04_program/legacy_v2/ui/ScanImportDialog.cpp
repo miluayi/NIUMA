@@ -91,7 +91,7 @@ void ScanImportDialog::setupUI()
 
     QLabel *titleLabel = new QLabel(QStringLiteral("扫描导入"), headerFrame);
     titleLabel->setObjectName("scanImportTitle");
-    QFont titleFont(QStringLiteral("MiSans"), 18, QFont::Normal);
+    QFont titleFont(QStringLiteral("Segoe UI"), 18, QFont::Normal);
     titleLabel->setFont(titleFont);
     titleLabel->setStyleSheet("color: #0F172A; border: none;");
 
@@ -535,7 +535,7 @@ void ScanImportDialog::onResolveClicked()
         auto *layout = new QVBoxLayout(&picker);
         layout->setContentsMargins(24, 20, 24, 20);
         auto *title = new QLabel(QStringLiteral("逐项选择资料字段"), &picker);
-        title->setFont(QFont(QStringLiteral("MiSans"), 18));
+        title->setFont(QFont(QStringLiteral("Segoe UI"), 18));
         layout->addWidget(title);
         auto *hint = new QLabel(QStringLiteral("只需选择内容不一致的字段；灰色字段已一致，无需修改。"), &picker);
         layout->addWidget(hint);
@@ -656,7 +656,7 @@ void ScanImportDialog::onResolveClicked()
     auto *headerLayout = new QHBoxLayout(header);
     headerLayout->setContentsMargins(0, 0, 0, 0);
     auto *title = new QLabel(QStringLiteral("逐项选择任务字段"), header);
-    title->setFont(QFont(QStringLiteral("MiSans"), 18));
+    title->setFont(QFont(QStringLiteral("Segoe UI"), 18));
     auto *close = new QPushButton(QStringLiteral("✕"), header);
     close->setFixedSize(32, 32);
     close->setStyleSheet("QPushButton { background: transparent; color: #94A3B8; border: none; }"

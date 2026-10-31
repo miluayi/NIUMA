@@ -104,7 +104,7 @@ QFrame* StatsView::buildPageHeader()
     headerLayout->setSpacing(Spacing::XS);
 
     QLabel *titleLabel = new QLabel(QStringLiteral("\u7EDF\u8BA1"), header);  // 统计
-    QFont titleFont(QStringLiteral("MiSans"), 22, QFont::Normal);
+    QFont titleFont(QStringLiteral("Segoe UI"), 22, QFont::Normal);
     titleLabel->setFont(titleFont);
     titleLabel->setStyleSheet("color:#0F172A;");
     headerLayout->addWidget(titleLabel);
@@ -112,7 +112,7 @@ QFrame* StatsView::buildPageHeader()
     QLabel *subtitleLabel = new QLabel(
         QStringLiteral("\u67E5\u770B\u4EFB\u52A1\u7EDF\u8BA1\u3001\u6708\u5EA6\u8D8B\u52BF\u4E0E\u5DE5\u4F5C\u5BC6\u5EA6\u70ED\u529B\u56FE"),
         header);  // 查看任务统计、月度趋势与工作密度热力图
-    QFont subtitleFont(QStringLiteral("MiSans"), 14);
+    QFont subtitleFont(QStringLiteral("Segoe UI"), 14);
     subtitleLabel->setFont(subtitleFont);
     subtitleLabel->setStyleSheet("color:#0F172A;");
     headerLayout->addWidget(subtitleLabel);

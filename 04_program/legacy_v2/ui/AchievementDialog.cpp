@@ -89,7 +89,7 @@ void AchievementDialog::setupUI()
     headerLayout->setSpacing(Spacing::SM);
 
     QLabel *titleLabel = new QLabel(QStringLiteral("\u586B\u5199\u6210\u679C\u4FE1\u606F"), headerFrame);  // 填写成果信息
-    QFont titleFont(QStringLiteral("MiSans"), 18, QFont::Normal);
+    QFont titleFont(QStringLiteral("Segoe UI"), 18, QFont::Normal);
     titleLabel->setFont(titleFont);
     titleLabel->setStyleSheet("color: #0F172A; border: none;");
 

@@ -1,7 +1,7 @@
 /* ============================================================================
    NIUMA V3.0 全局 QSS 样式表
    严格对齐 coding.md 第八节与 qt_implementation_guide.md 第二节
-   字体：MiSans，body 15px
+   字体：Segoe UI，body 15px
    禁用：多层 box-shadow / font-weight 500,600 / 非整数字号 / text-transform / letter-spacing
    ============================================================================ */
 
@@ -9,7 +9,7 @@
    全局样式
    ---------------------------------------------------------------------------- */
 QWidget {
-    font-family: "MiSans", "MiSans Latin", "MiSans L3", sans-serif;
+    font-family: "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
     font-size: 15px;
     color: #0F172A;
     background-color: #F0F2F5;

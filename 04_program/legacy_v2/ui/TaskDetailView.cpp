@@ -121,7 +121,7 @@ public:
 
         // 时间文字
         QString timeText = index.data(Qt::UserRole).toString();
-        QFont timeFont(QStringLiteral("MiSans"), 9);
+        QFont timeFont(QStringLiteral("Segoe UI"), 9);
         timeFont.setStyleName(QStringLiteral("Normal"));
         painter->setFont(timeFont);
         painter->setPen(QColor(0x94, 0xA3, 0xB8));
@@ -130,7 +130,7 @@ public:
 
         // 内容文字（自动换行）
         QString content = index.data(Qt::DisplayRole).toString();
-        QFont contentFont(QStringLiteral("MiSans"), 10);
+        QFont contentFont(QStringLiteral("Segoe UI"), 10);
         contentFont.setStyleName(QStringLiteral("Normal"));
         QRect contentRect(textX, rect.top() + 24, textWidth, rect.height() - 28);
         if (!content.isEmpty()) {
@@ -159,7 +159,7 @@ public:
             painter->drawRoundedRect(btnRect, 4, 4);
             // 绘制 "−" 符号
             painter->setPen(QColor(0xDC, 0x26, 0x26));
-            QFont btnFont(QStringLiteral("MiSans"), 13, QFont::Normal);
+            QFont btnFont(QStringLiteral("Segoe UI"), 13, QFont::Normal);
             btnFont.setStyleName(QStringLiteral("Normal"));
             painter->setFont(btnFont);
             painter->drawText(btnRect, Qt::AlignCenter, QStringLiteral("\u2212"));
@@ -182,7 +182,7 @@ public:
         }
 
         QTextDocument doc;
-        QFont contentFont(QStringLiteral("MiSans"), 10);
+        QFont contentFont(QStringLiteral("Segoe UI"), 10);
         contentFont.setStyleName(QStringLiteral("Normal"));
         doc.setDefaultFont(contentFont);
         doc.setPlainText(content);
@@ -313,7 +313,7 @@ QFrame* TaskDetailView::buildHeader()
 
     taskNoLabel_ = new QLabel(header);
     taskNoLabel_->setStyleSheet(
-        "QLabel { font-family: MiSans; font-size: 13px; "
+        "QLabel { font-family: Segoe UI; font-size: 13px; "
         "color: #0F172A; }");
 
     statusTagLabel_ = new QLabel(header);
@@ -349,12 +349,12 @@ QFrame* TaskDetailView::buildHeader()
     topRow->addWidget(periodicTagLabel_);
     titleLabel_ = new QLabel(header);
     titleLabel_->setObjectName("appUiDetailTitle");
-    QFont titleFont(QStringLiteral("MiSans"));
+    QFont titleFont(QStringLiteral("Segoe UI"));
     titleFont.setPixelSize(22);
     titleFont.setWeight(QFont::Normal);
     titleFont.setStyleName(QStringLiteral("Normal"));
     titleLabel_->setFont(titleFont);
-    titleLabel_->setStyleSheet("font-family: MiSans; font-size: 22px; font-weight: 400; color: #0F172A; border: none;");
+    titleLabel_->setStyleSheet("font-family: Segoe UI; font-size: 22px; font-weight: 400; color: #0F172A; border: none;");
     titleLabel_->setWordWrap(true);
     titleLabel_->setMinimumHeight(QFontMetrics(titleLabel_->font()).lineSpacing() * 2 + 12);
     titleLabel_->setMaximumHeight(QFontMetrics(titleLabel_->font()).lineSpacing() * 2 + 12);
@@ -773,7 +773,7 @@ void TaskDetailView::loadTaskData()
 
     // ---- 基本信息区 ----
     taskNoValue_->setText(task.taskNo);
-    taskNoValue_->setStyleSheet("font-family: MiSans; font-size: 14px; color: #0F172A; border: none;");
+    taskNoValue_->setStyleSheet("font-family: Segoe UI; font-size: 14px; color: #0F172A; border: none;");
 
     // 分类标签（带颜色）
     QString catBg;

@@ -149,7 +149,6 @@ add_executable(NiumaV3LegacyBaseline WIN32
     legacy_v2/src/main.cpp
     ${NIUMA_LEGACY_CORE_SOURCES}
     legacy_v2/resources/resources.qrc
-    legacy_v2/resources/fonts.qrc
     legacy_v2/resources/app.rc)
 
 target_link_libraries(NiumaV3LegacyBaseline PRIVATE Qt5::Widgets Qt5::Sql Qt5::Concurrent)
@@ -185,8 +184,7 @@ add_executable(NiumaV3StagingPathTest
 add_executable(NiumaV3ShellContractTest
     tests/shell_contract_test.cpp
     ${NIUMA_LEGACY_CORE_SOURCES}
-    legacy_v2/resources/resources.qrc
-    legacy_v2/resources/fonts.qrc)
+    legacy_v2/resources/resources.qrc)
 
 add_executable(NiumaV3HomeContractTest
     tests/home_contract_test.cpp
@@ -249,8 +247,7 @@ add_executable(NiumaV3StyledMessageBoxContractTest
 add_executable(NiumaV3NativeVisualCaptureContractTest
     tests/native_visual_capture_contract_test.cpp
     ${NIUMA_LEGACY_CORE_SOURCES}
-    legacy_v2/resources/resources.qrc
-    legacy_v2/resources/fonts.qrc)
+    legacy_v2/resources/resources.qrc)
 
 target_link_libraries(NiumaV3Phase3StagingTest PRIVATE Qt5::Widgets Qt5::Sql Qt5::Concurrent)
 target_include_directories(NiumaV3Phase3StagingTest PRIVATE

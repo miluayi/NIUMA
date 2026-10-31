@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
                                   QStringLiteral("attachmentSection"), QStringLiteral("remarksSection"),
                                   QStringLiteral("historySection"), QStringLiteral("achievementSection")};
     if (!detailTitle || !detailTitle->wordWrap() || !detailTitle->text().contains(QStringLiteral("S12 快捷键保存任务"))
-        || detailTitle->font().family() != QStringLiteral("MiSans")
+        || detailTitle->font().family() != QStringLiteral("Segoe UI")
         || detailTitle->font().pixelSize() != 22
         || !detailTitle->styleSheet().contains(QStringLiteral("#0F172A"))
         || !keyTag || keyTag->objectName() != QStringLiteral("keyTagLabel")

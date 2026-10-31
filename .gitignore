@@ -48,10 +48,9 @@
 /05_product/*
 !/05_product/README.md
 
-# Download MiSans from its official source; do not redistribute the raw pack.
+# Historical design font pack; never a production build dependency.
 /03_ui_design/MiSans Global _ALL/**
 !/03_ui_design/MiSans Global _ALL/README.md
-!/03_ui_design/MiSans Global _ALL/font-sources.json
 
 # OS/editor caches and local credentials
 **/.DS_Store

@@ -83,7 +83,7 @@ void StyledMessageBox::setupUI(const QString &title, const QString &text, bool i
     headerLayout->setContentsMargins(Spacing::XL, Spacing::LG, Spacing::XL, Spacing::LG);
 
     QLabel *titleLabel = new QLabel(title, header);
-    titleLabel->setFont(QFont(QStringLiteral("MiSans"), 16, QFont::Normal));
+    titleLabel->setFont(QFont(QStringLiteral("Segoe UI"), 16, QFont::Normal));
     titleLabel->setStyleSheet(QString("color: %1; border: none;").arg(isWarning ? "#DC2626" : "#0F172A"));
     headerLayout->addWidget(titleLabel);
     headerLayout->addStretch();

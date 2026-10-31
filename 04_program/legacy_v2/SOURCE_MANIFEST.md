@@ -27,3 +27,5 @@ Get-ChildItem -LiteralPath $sourceRoot -Recurse -File |
 ## 2026-10-31 仓库清理补记
 
 以上为 2026-09-22 的原始快照记录，不是当前源码的逐文件一致性声明；后续正式迁移与修复见 `02_process/task.md`。本轮移除未被现行 CMake 引用的 phase2、phase4、phase5、phase6_7、phase8 旧测试文件，以及已由统一 SVG 构建生成替代的旧 `resources/icons/app-icon.ico`。继续保留现行 phase3 staging 测试、`04_program/tests` 全部有效合同与历史设计预览源码。清理范围及验证见 `02_process/REPOSITORY_CLEANUP_20261031.md`。
+
+后续字体更正：正式软件统一使用 Segoe UI 与微软雅黑系统回退，移除 `resources/fonts.qrc`、应用字体注册、MiSans L3 回退和正式控件/QSS 中的旧字体声明。历史原型与准备资料仍保留原始状态；正式构建无需这些字体文件。

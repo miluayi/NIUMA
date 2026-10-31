@@ -16,7 +16,7 @@
 
 ## 运行真实交互窗口
 
-字体原包仅在本地保留，公开仓库提供 [官方获取和校验说明](MiSans%20Global%20_ALL/README.md)。历史视觉回归材料属于定稿设计依据，继续保留；可再生的测试抓图位于 `06_test`，不进入 Git。
+本目录与 `04_program/ui_preview` 记录早期方案 B 原型，包含当时的 MiSans 字体声明；当前正式软件已使用 Segoe UI 与微软雅黑系统字体，不再依赖字体原包。历史视觉回归材料属于定稿设计依据，继续保留；可再生测试抓图位于 `06_test`，不进入 Git。
 
 在仓库根目录执行：
 
@@ -26,4 +26,4 @@ C:\msys64\mingw64\bin\cmake.exe --build --preset ui-preview-debug --target Niuma
 & 'D:\project\08_workspace_v3\04_program\tools\run_preview.ps1'
 ```
 
-`04_program/tools/run_preview.ps1` 配置 Qt／MinGW 运行库路径，默认启动定稿预览。预览源码位于 `04_program/ui_preview/`，编译所需的 v2 原始工程位于 `D:\project\05_workspace_v2`；预览数据库仅位于 `06_test/data/ui-preview-debug/v2-preview-data-b/`，不连接正式数据。截图和预览报告写入 `06_test/evidence/ui-preview-debug/`，这些生成结果可清理重建。字体原始包保留在本目录，正式程序所需字体另由 `04_program/legacy_v2/resources/` 内置。正式产品位于 `05_product/`。
+`04_program/tools/run_preview.ps1` 配置 Qt／MinGW 运行库路径，默认启动历史定稿预览。预览源码位于 `04_program/ui_preview/`，编译所需的 v2 原始工程位于 `D:\project\05_workspace_v2`；预览数据库仅位于 `06_test/data/ui-preview-debug/v2-preview-data-b/`，不连接正式数据。截图和预览报告写入 `06_test/evidence/ui-preview-debug/`，这些生成结果可清理重建。历史字体原包保留在本目录作为准备资料，正式程序不再内置该字体。正式产品位于 `05_product/`。

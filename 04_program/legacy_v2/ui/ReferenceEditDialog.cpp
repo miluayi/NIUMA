@@ -88,7 +88,7 @@ void ReferenceEditDialog::setupUI()
     headerLayout->setSpacing(Spacing::SM);
 
     QLabel *titleLabel = new QLabel(QStringLiteral("编辑资料"), headerFrame);
-    QFont titleFont(QStringLiteral("MiSans"), 18, QFont::Normal);
+    QFont titleFont(QStringLiteral("Segoe UI"), 18, QFont::Normal);
     titleLabel->setFont(titleFont);
     titleLabel->setStyleSheet("color: #0F172A; border: none;");
 
@@ -137,7 +137,7 @@ void ReferenceEditDialog::setupUI()
     refNoEdit_->setStyleSheet(
         "QLineEdit { background: #F8FAFC; color: #94A3B8; "
         "border: 1px solid #E2E8F0; border-radius: 8px; padding: 8px 12px; "
-        "font-size: 14px; font-family: MiSans; }");
+        "font-size: 14px; font-family: Segoe UI; }");
 
     formGrid->addWidget(nameLabel, 0, 0);
     formGrid->addWidget(nameEdit_, 1, 0);

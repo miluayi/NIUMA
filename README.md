@@ -1,4 +1,4 @@
-# NIUMA V3.1.4 仓库
+# NIUMA V3.1.5 仓库
 
 本仓库包含 NIUMA（铁军牛马任务日志）V3.1 的产品文档、定稿设计、Qt5 Widgets 正式源码和测试源码。公开仓库：[miluayi/NIUMA](https://github.com/miluayi/NIUMA)。当前产品行为见 [01_docs](01_docs/README.md)，逐轮验证记录见 [02_process/task.md](02_process/task.md)。
 
@@ -16,16 +16,18 @@
 
 ## 构建与验证
 
-首次克隆后，先按 [字体准备说明](03_ui_design/MiSans%20Global%20_ALL/README.md) 从官方取得字体并放回指定路径。原始字体包不随公开仓库分发；校验清单记录当前构建所用的 9 个字体文件。
+正式软件使用 Windows 自带的 Segoe UI，中文回退至 Microsoft YaHei UI / Microsoft YaHei（微软雅黑）。不加载、不嵌入 MiSans，首次克隆后无需下载字体；历史设计字体原包仅在本地作为前期资料保留。
 
 在仓库根目录使用 `CMakePresets.json` 中的 `v3-staging-debug` 或 `v3-staging-release` 配置、构建和运行 CTest。`04_program/build/` 为可再生构建树；`06_test/data/`、`06_test/evidence/` 和 `06_test/reports/` 为可再生测试输出，清理后测试会重新创建。
 构建需要 Qt5 Svg 开发模块；图标工具从统一 SVG 在构建目录中生成 ICO，不修改源码中的二进制资源。关闭图标采用 Microsoft Fluent UI，许可说明随交付包附带。
 Windows 构建另需与 Qt5 Gui 配套的私有开发头文件，用于同步自定义边框的 Qt 几何缓存；交付包不增加运行时 DLL。
 
-真实用户 `Data/`、工作目录和备份不得进入仓库、测试目录或交付 ZIP。当前交付包见 `05_product/NIUMA-V3.1.4-20261031.zip`，运行文件始终为 `Niuma.exe`，不随版本变化。当前为 3.1.4；后续优化依次递增至 3.1.9，再升级为 3.2.0。
+真实用户 `Data/`、工作目录和备份不得进入仓库、测试目录或交付 ZIP。当前交付包见 `05_product/NIUMA-V3.1.5-20261031.zip`，运行文件始终为 `Niuma.exe`，不随版本变化。当前为 3.1.5；后续优化依次递增至 3.1.9，再升级为 3.2.0。
 
 Windows 11 使用系统圆角，Windows 7/8/10 使用带抗锯齿透明边缘的软件圆角及边框；窗口控制按钮完整自绘。兼容分支与静态导入审计属于本地检查，Windows 7 SP1 的实际主题、驱动及原生文件选择器仍需目标系统验证。
 
 ## 仓库维护
 
 保留前期准备资料、历史决策、定稿设计与有效测试源码；构建树、隔离测试输出、系统缓存、真实数据和本地交付包不进入 Git。清理范围见 [2026-10-31 清理记录](02_process/REPOSITORY_CLEANUP_20261031.md)。仓库公开不代表授予额外的软件许可；第三方资源遵循各自许可，Fluent 图标许可保留于源码。
+
+仅修改文档、清理生成物或执行 Git/GitHub 发布时，只检查相关文件、提交范围与同步状态，不重复软件构建、全量 CTest、Qt 抓图或打包。涉及软件源码/资源/构建行为的修改，按开发文档执行对应的软件验证。

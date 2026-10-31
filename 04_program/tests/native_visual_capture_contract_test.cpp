@@ -147,10 +147,7 @@ int main(int argc, char *argv[])
     QFile fontDiagnostics(QDir(captureDir).filePath(QStringLiteral("font-diagnostics.txt")));
     if (!fontDiagnostics.open(QIODevice::WriteOnly | QIODevice::Text)) return 26;
     QTextStream fontReport(&fontDiagnostics);
-    fontReport << "MiSans=" << QFontDatabase().styles(QStringLiteral("MiSans")).join(',')
-               << " Latin=" << QFontDatabase().styles(QStringLiteral("MiSans Latin")).join(',')
-               << " L3=" << QFontDatabase().styles(QStringLiteral("MiSans L3")).join(',')
-               << " app=" << QFontInfo(app.font()).family() << '/' << QFontInfo(app.font()).styleName()
+    fontReport << "app=" << QFontInfo(app.font()).family() << '/' << QFontInfo(app.font()).styleName()
                << " Han=" << QRawFont::fromFont(app.font()).supportsCharacter(0x4EFB)
                << " Latin=" << QRawFont::fromFont(app.font()).supportsCharacter('N')
                << " Rare=" << QRawFont::fromFont(app.font()).supportsCharacter(0x20000);
@@ -169,12 +166,7 @@ int main(int argc, char *argv[])
         fontReport << "resolved-run=" << run.rawFont().familyName() << '\n';
         if (run.glyphIndexes().contains(0)) return 62;
     }
-    const auto loadedFamilies = app.property("appUiLoadedFontFamilies").toStringList();
-    if (!loadedFamilies.contains(QStringLiteral("MiSans"))
-        || !loadedFamilies.contains(QStringLiteral("MiSans Latin"))
-        || !loadedFamilies.contains(QStringLiteral("MiSans L3"))
-        || !QFile::exists(QStringLiteral(":/fonts/MiSans-Normal.ttf"))
-        || !QFile::exists(QStringLiteral(":/fonts/MiSansLatin-Normal.ttf"))
+    if (QDir(QStringLiteral(":/fonts")).exists()
         || QFontInfo(app.font()).family() != QStringLiteral("Segoe UI")
         || (!QFontDatabase().families().contains(QStringLiteral("Microsoft YaHei UI"))
             && !QFontDatabase().families().contains(QStringLiteral("Microsoft YaHei")))

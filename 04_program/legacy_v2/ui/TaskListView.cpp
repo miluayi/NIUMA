@@ -87,7 +87,7 @@ void TaskListView::setupUI()
     titleLayout->setSpacing(Spacing::XS);
 
     QLabel *titleLabel = new QLabel(QStringLiteral("\u4EFB\u52A1\u7BA1\u7406"), this);  // 任务管理
-    QFont titleFont(QStringLiteral("MiSans"), 22, QFont::Normal);
+    QFont titleFont(QStringLiteral("Segoe UI"), 22, QFont::Normal);
     titleLabel->setFont(titleFont);
     titleLabel->setStyleSheet("color:#0F172A;");
     titleLayout->addWidget(titleLabel);
@@ -97,7 +97,7 @@ void TaskListView::setupUI()
                        "\u652F\u6301\u6309\u5206\u7C7B\u3001\u6765\u6E90\u3001"
                        "\u72B6\u6001\u3001\u529E\u7406\u4EBA\u7B49\u7EF4\u5EA6\u7B5B\u9009"),
         this);  // 管理日常任务，支持按分类、来源、状态、办理人等维度筛选
-    QFont subtitleFont(QStringLiteral("MiSans"), 14);
+    QFont subtitleFont(QStringLiteral("Segoe UI"), 14);
     subtitleLabel->setFont(subtitleFont);
     subtitleLabel->setStyleSheet("color:#0F172A;");
     titleLayout->addWidget(subtitleLabel);

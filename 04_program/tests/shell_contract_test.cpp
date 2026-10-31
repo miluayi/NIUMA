@@ -150,11 +150,8 @@ int main(int argc, char *argv[])
             != QStringLiteral("Segoe UI")
         || AppTheme::preferredFontFamily(QStringList{QStringLiteral("Microsoft YaHei")})
             != QStringLiteral("Microsoft YaHei")) return 6;
-    const QStringList bundledFamilies = app.property("appUiLoadedFontFamilies").toStringList();
-    if (!bundledFamilies.contains(QStringLiteral("MiSans"))
-        || !bundledFamilies.contains(QStringLiteral("MiSans Latin"))
-        || !bundledFamilies.contains(QStringLiteral("MiSans L3"))
-        || !QFontDatabase().families().contains(QStringLiteral("MiSans"))) return 15;
+    if (QDir(QStringLiteral(":/fonts")).exists()
+        || app.font().family() != QStringLiteral("Segoe UI")) return 15;
     if (!newTaskShortcut || newTaskShortcut->key() != QKeySequence::New
         || !findTaskShortcut || findTaskShortcut->key() != QKeySequence::Find
         || !refreshShortcut || refreshShortcut->key() != QKeySequence(Qt::Key_F5)

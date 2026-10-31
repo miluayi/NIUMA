@@ -109,7 +109,7 @@ TitleBar::TitleBar(QWidget *parent)
     // NIUMA keeps the product mark regular-weight and reserves the same
     // title slot as the approved shell so navigation controls align consistently.
     titleLabel_ = new QLabel(QStringLiteral("NIUMA"), this);
-    QFont titleFont(QStringLiteral("MiSans"), 17, QFont::Normal);
+    QFont titleFont(QStringLiteral("Segoe UI"), 17, QFont::Normal);
     titleLabel_->setFont(titleFont);
     titleLabel_->setFixedWidth(126);
     titleLabel_->setProperty("appUiNoLabelReset", true);

@@ -66,14 +66,14 @@ void PeriodicTaskView::setupUI()
     titleLayout->setSpacing(Spacing::XS);
 
     QLabel *titleLabel = new QLabel(QStringLiteral("周期任务"), this);
-    QFont titleFont(QStringLiteral("MiSans"), 22, QFont::Normal);
+    QFont titleFont(QStringLiteral("Segoe UI"), 22, QFont::Normal);
     titleLabel->setFont(titleFont);
     titleLabel->setStyleSheet("color:#0F172A;");
     titleLayout->addWidget(titleLabel);
 
     QLabel *subtitleLabel = new QLabel(
         QStringLiteral("管理周期性任务模板，自动提醒创建"), this);
-    QFont subtitleFont(QStringLiteral("MiSans"), 14);
+    QFont subtitleFont(QStringLiteral("Segoe UI"), 14);
     subtitleLabel->setFont(subtitleFont);
     subtitleLabel->setStyleSheet("color:#0F172A;");
     titleLayout->addWidget(subtitleLabel);

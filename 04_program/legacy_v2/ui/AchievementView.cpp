@@ -82,7 +82,7 @@ public:
         const int tagGap = 6;       // 标签间距
         const int borderRadius = 4;
 
-        QFont tagFont(QStringLiteral("MiSans"));
+        QFont tagFont(QStringLiteral("Segoe UI"));
         tagFont.setPixelSize(14);
         tagFont.setStyleName(QStringLiteral("Normal"));
         painter->setFont(tagFont);
@@ -194,7 +194,7 @@ void AchievementView::setupHeader(QVBoxLayout *mainLayout)
     titleLayout->setSpacing(Spacing::XS);
 
     QLabel *titleLabel = new QLabel(QStringLiteral("\u5E74\u5EA6\u6210\u679C"), this);  // 年度成果
-    QFont titleFont(QStringLiteral("MiSans"), 22, QFont::Normal);
+    QFont titleFont(QStringLiteral("Segoe UI"), 22, QFont::Normal);
     titleLabel->setFont(titleFont);
     titleLabel->setStyleSheet("color:#0F172A;");
     titleLayout->addWidget(titleLabel);
@@ -203,7 +203,7 @@ void AchievementView::setupHeader(QVBoxLayout *mainLayout)
         QStringLiteral("\u5DE5\u4F5C\u6210\u679C\u6301\u7EED\u6C89\u6DC0 \u00B7 "
                        "\u5E74\u5EA6\u603B\u7ED3\u81EA\u52A8\u79EF\u7D2F"),
         this);  // 工作成果持续沉淀 · 年度总结自动积累
-    QFont subtitleFont(QStringLiteral("MiSans"), 14);
+    QFont subtitleFont(QStringLiteral("Segoe UI"), 14);
     subtitleLabel->setFont(subtitleFont);
     subtitleLabel->setStyleSheet("color:#0F172A;");
     titleLayout->addWidget(subtitleLabel);
@@ -514,7 +514,7 @@ void AchievementView::fillTablePage()
         noItem->setEditable(false);
         noItem->setTextAlignment(Qt::AlignCenter);
         noItem->setData(QColor(0x94, 0xA3, 0xB8), Qt::ForegroundRole);  // #94A3B8
-        QFont monoFont(QStringLiteral("MiSans"));
+        QFont monoFont(QStringLiteral("Segoe UI"));
         monoFont.setPixelSize(14);
         monoFont.setStyleHint(QFont::Monospace);
         noItem->setFont(monoFont);

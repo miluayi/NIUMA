@@ -122,13 +122,13 @@ QFrame* HomeView::buildPageHeader()
     titleLayout->setSpacing(Spacing::XS);
 
     QLabel *titleLabel = new QLabel(QStringLiteral("\u9996\u9875"), header);  // 首页
-    QFont titleFont(QStringLiteral("MiSans"), 22, QFont::Normal);
+    QFont titleFont(QStringLiteral("Segoe UI"), 22, QFont::Normal);
     titleLabel->setFont(titleFont);
     titleLabel->setStyleSheet("color:#0F172A;");
     titleLayout->addWidget(titleLabel);
 
     subtitleLabel_ = new QLabel(header);
-    QFont subtitleFont(QStringLiteral("MiSans"), 14);
+    QFont subtitleFont(QStringLiteral("Segoe UI"), 14);
     subtitleLabel_->setFont(subtitleFont);
     subtitleLabel_->setStyleSheet("color:#0F172A;");
     titleLayout->addWidget(subtitleLabel_);
@@ -183,7 +183,7 @@ QFrame* HomeView::buildFocusArea()
     // 标题行
     focusTitle_ = new QLabel(QStringLiteral("\u4ECA\u65E5\u4E13\u6CE8  0/3"), area);
     focusTitle_->setObjectName("FocusTitle");
-    QFont titleFont(QStringLiteral("MiSans"), 16, QFont::Normal);
+    QFont titleFont(QStringLiteral("Segoe UI"), 16, QFont::Normal);
     focusTitle_->setFont(titleFont);
     focusTitle_->setStyleSheet("color:#2463EB;");
     focusTitle_->setFixedHeight(26);
@@ -233,7 +233,7 @@ QFrame* HomeView::buildInProgressArea()
 
     QLabel *cardTitle = new QLabel(
         QStringLiteral("\u8FDB\u884C\u4E2D\u4EFB\u52A1"), card);  // 进行中任务
-    QFont titleFont(QStringLiteral("MiSans"), 18, QFont::Normal);
+    QFont titleFont(QStringLiteral("Segoe UI"), 18, QFont::Normal);
     cardTitle->setFont(titleFont);
     cardTitle->setStyleSheet("color:#0F172A;");
     headerLayout->addWidget(cardTitle);
@@ -346,7 +346,7 @@ QFrame* HomeView::buildPeriodicArea()
 
     QLabel *cardTitle = new QLabel(
         QStringLiteral("\u5468\u671F\u4EFB\u52A1\u63D0\u9192"), card);  // 周期任务提醒
-    QFont titleFont(QStringLiteral("MiSans"), 18, QFont::Normal);
+    QFont titleFont(QStringLiteral("Segoe UI"), 18, QFont::Normal);
     cardTitle->setFont(titleFont);
     cardTitle->setStyleSheet("color:#0F172A;");
     layout->addWidget(cardTitle);
@@ -386,7 +386,7 @@ QFrame* HomeView::buildMonthlyStatsArea()
 
     QLabel *cardTitle = new QLabel(
         QStringLiteral("\u672C\u6708\u6982\u89C8"), card);  // 本月概览
-    QFont titleFont(QStringLiteral("MiSans"), 18, QFont::Normal);
+    QFont titleFont(QStringLiteral("Segoe UI"), 18, QFont::Normal);
     cardTitle->setFont(titleFont);
     cardTitle->setStyleSheet("color:#0F172A;");
     layout->addWidget(cardTitle);
@@ -406,14 +406,14 @@ QFrame* HomeView::buildMonthlyStatsArea()
         cellLayout->setSpacing(2);
 
         valueLabel = new QLabel(QStringLiteral("0"), cell);
-        QFont valueFont(QStringLiteral("MiSans"), 24, QFont::Normal);
+        QFont valueFont(QStringLiteral("Segoe UI"), 24, QFont::Normal);
         valueLabel->setFont(valueFont);
         valueLabel->setAlignment(Qt::AlignCenter);
         valueLabel->setStyleSheet("color:#0F172A;");
         cellLayout->addWidget(valueLabel);
 
         QLabel *label = new QLabel(labelText, cell);
-        QFont labelFont(QStringLiteral("MiSans"), 13);
+        QFont labelFont(QStringLiteral("Segoe UI"), 13);
         label->setFont(labelFont);
         label->setAlignment(Qt::AlignCenter);
         label->setStyleSheet("color:#0F172A;");
@@ -518,7 +518,7 @@ void HomeView::loadFocusTasks()
 
         // 任务名称 —— 不拉伸，五角星紧跟其后
         QLabel *nameLabel = createTaskNameLabel(task, false);
-        nameLabel->setFont(QFont(QStringLiteral("MiSans"), 17));
+        nameLabel->setFont(QFont(QStringLiteral("Segoe UI"), 17));
         rowLayout->addWidget(nameLabel);
         rowLayout->addSpacing(10);
 
@@ -625,7 +625,7 @@ void HomeView::loadInProgressTasks()
         // 任务名称（逾期红色）—— 不拉伸，五角星紧跟其后
         bool overdue = task.isOverdue() && !task.isCompleted();
         QLabel *nameLabel = createTaskNameLabel(task, overdue);
-        nameLabel->setFont(QFont(QStringLiteral("MiSans"), 15));
+        nameLabel->setFont(QFont(QStringLiteral("Segoe UI"), 15));
         rowLayout->addWidget(nameLabel);
         rowLayout->addSpacing(10);
 

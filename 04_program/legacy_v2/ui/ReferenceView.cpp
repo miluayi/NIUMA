@@ -97,14 +97,14 @@ void ReferenceView::setupUI()
     titleLayout->setSpacing(Spacing::XS);
 
     QLabel *titleLabel = new QLabel(QStringLiteral("参考资料"), this);
-    QFont titleFont(QStringLiteral("MiSans"), 22, QFont::Normal);
+    QFont titleFont(QStringLiteral("Segoe UI"), 22, QFont::Normal);
     titleLabel->setFont(titleFont);
     titleLabel->setStyleSheet("color:#0F172A;");
     titleLayout->addWidget(titleLabel);
 
     QLabel *subtitleLabel = new QLabel(
         QStringLiteral("归纳整理工作中常用的各类文件资料"), this);
-    QFont subtitleFont(QStringLiteral("MiSans"), 14);
+    QFont subtitleFont(QStringLiteral("Segoe UI"), 14);
     subtitleLabel->setFont(subtitleFont);
     subtitleLabel->setStyleSheet("color:#0F172A;");
     titleLayout->addWidget(subtitleLabel);
@@ -513,7 +513,7 @@ void ReferenceView::applyFilterToModel()
     // 清空并重新填充模型
     model_->removeRows(0, model_->rowCount());
 
-    QFont monoFont(QStringLiteral("MiSans"));
+    QFont monoFont(QStringLiteral("Segoe UI"));
     monoFont.setPixelSize(14);
     monoFont.setStyleHint(QFont::Monospace);
     QFont bodyFont = tableView_->font();
