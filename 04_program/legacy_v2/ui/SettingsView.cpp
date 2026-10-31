@@ -1123,8 +1123,8 @@ QFrame* SettingsView::buildAboutCard()
 
     // 作者信息
     QLabel *authorLabel = new QLabel(
-        QStringLiteral("\u4F5C\u8005\u4FE1\u606F\uFF1A\u957F\u767D\u671D\u9C9C\u65CF\u81EA\u6CBB\u53BF\u7A0E\u52A1\u5C40\u516B\u9053\u6C9F\u7A0E\u52A1\u5206\u5C40 \u97E9\u708E\u8D64"),
-        card);  // 作者信息：长白朝鲜族自治县税务局八道沟税务分局 韩炎赤
+        QStringLiteral("作者信息：miluayi"),
+        card);
     authorLabel->setStyleSheet("font-size:15px; color:#0F172A; border:none; background:transparent;");
     layout->addWidget(authorLabel);
 
