@@ -21,6 +21,7 @@
 #include <QPushButton>
 #include <QSizePolicy>
 #include <QTableView>
+#include "widgets/CopyableTableView.h"
 #include <QScrollBar>
 #include <QShortcut>
 #include <QStackedWidget>
@@ -362,7 +363,7 @@ void TaskListView::setupTable()
     // QTableView
     tableStateStack_ = new QStackedWidget(cardFrame);
     tableStateStack_->setObjectName("taskTableState");
-    tableView_ = new QTableView(tableStateStack_);
+    tableView_ = new CopyableTableView(tableStateStack_);
     tableView_->setObjectName("taskTable");
     tableView_->setSelectionBehavior(QAbstractItemView::SelectRows);
     tableView_->setSelectionMode(QAbstractItemView::SingleSelection);

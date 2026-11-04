@@ -30,6 +30,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
+#include "widgets/CopyableTableView.h"
 #include <QListWidgetItem>
 #include <QMouseEvent>
 #include <QPainter>
@@ -566,7 +567,7 @@ QFrame* TaskDetailView::buildRemarksSection()
     layout->addWidget(title);
 
     // 备注列表（自定义委托）
-    remarksList_ = new QListWidget(section);
+    remarksList_ = new CopyableListWidget(section);
     remarksList_->setObjectName("remarksList");
     remarksList_->setMouseTracking(true);
     remarksList_->setSelectionMode(QAbstractItemView::NoSelection);
@@ -638,7 +639,7 @@ QFrame* TaskDetailView::buildHistorySection()
     layout->addWidget(title);
 
     // 历史列表（只读，无删除按钮）
-    historyList_ = new QListWidget(section);
+    historyList_ = new CopyableListWidget(section);
     historyList_->setObjectName("historyList");
     historyList_->setMouseTracking(true);
     historyList_->setSelectionMode(QAbstractItemView::NoSelection);

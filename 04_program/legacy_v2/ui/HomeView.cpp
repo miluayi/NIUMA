@@ -1031,7 +1031,7 @@ QLabel* HomeView::createTaskNameLabel(const Task &task, bool redIfOverdue)
         ).arg(baseColor, task.title.toHtmlEscaped());
     }
     label->setText(html);
-    label->setTextInteractionFlags(Qt::NoTextInteraction);
+    label->setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::TextSelectableByKeyboard);
     return label;
 }
 

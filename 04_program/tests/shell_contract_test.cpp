@@ -67,6 +67,8 @@ int main(int argc, char *argv[])
         while (startupWait.elapsed()<500) { app.processEvents(); QThread::msleep(5); }
         const int input=verifyPhysicalNavigation(window,sidebar);
         if (input) return input;
+        const int copyInput=verifyPhysicalTextSelection(window);
+        if (copyInput) return copyInput;
 #ifdef Q_OS_WIN
         if (legacyInput) {
             const HWND hwnd=reinterpret_cast<HWND>(window.winId());

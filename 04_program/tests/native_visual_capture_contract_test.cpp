@@ -1,4 +1,5 @@
 #include <QApplication>
+#include "text_selection_contract.h"
 #include <QScreen>
 #include <QTextLayout>
 #include <QGlyphRun>
@@ -184,6 +185,17 @@ int main(int argc, char *argv[])
         sidebar->setCurrentRow(sidebarRow);
         app.processEvents();
         if (workspace->currentIndex() != page) return 4 + page;
+        if (page == 0) {
+            auto *homeTitle = window.findChild<QLabel *>(QStringLiteral("HomeTaskName"));
+            if (!homeTitle) {
+                for (auto *label : workspace->currentWidget()->findChildren<QLabel *>()) {
+                    if (label->isVisible() && label->text().contains(QStringLiteral("字体与分类标志检查"))) {
+                        homeTitle = label; break;
+                    }
+                }
+            }
+            if (!verifyLabelSelection(homeTitle)) return 180;
+        }
         for (const QWidget *widget : window.findChildren<QWidget *>()) {
             if (widget->isVisible() && QFontInfo(widget->font()).family() != QStringLiteral("Segoe UI")) {
                 fontReport << "page=" << page << " widget=" << widget->metaObject()->className()
@@ -383,6 +395,7 @@ int main(int argc, char *argv[])
     if (!detailTitle || !detailTitle->isVisible()
         || QFontInfo(detailTitle->font()).family() != QStringLiteral("Segoe UI")
         || QFontInfo(detailTitle->font()).pixelSize() != 22) return 30;
+    if (!verifyLabelSelection(const_cast<QLabel *>(detailTitle))) return 181;
     for (const QWidget *widget : detail.findChildren<QWidget *>()) {
         if (widget->isVisible() && QFontInfo(widget->font()).family() != QStringLiteral("Segoe UI")) {
             fontReport << "detail widget=" << widget->metaObject()->className()

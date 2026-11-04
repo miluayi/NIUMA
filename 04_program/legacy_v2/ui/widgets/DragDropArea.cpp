@@ -55,6 +55,7 @@ DragDropArea::DragDropArea(QWidget *parent)
     dropHintLabel_->setAlignment(Qt::AlignCenter);
     dropHintLabel_->setCursor(Qt::PointingHandCursor);
     dropHintLabel_->installEventFilter(this);  // 监听点击事件
+    dropHintLabel_->setProperty("appUiNoTextSelection", true);
     dropHintLabel_->setText(QStringLiteral(
         "拖拽文件到此处，或点击选择文件\n（支持 Ctrl+V 粘贴）"));
     dropHintLabel_->setWordWrap(true);

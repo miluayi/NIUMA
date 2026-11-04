@@ -1,4 +1,5 @@
 #include <QApplication>
+#include "text_selection_contract.h"
 #include <QAbstractButton>
 #include <QComboBox>
 #include <QDialog>
@@ -414,6 +415,9 @@ int main(int argc, char *argv[])
     QMetaObject::invokeMethod(&view, "onSearchClicked", Qt::DirectConnection);
     view.refresh();
     if (table->model()->index(0, 0).data().toString() != later.refNo) return 29;
+    view.resize(1200, 800);
+    app.processEvents();
+    if (!verifyCellSelection(table, 1)) return 180;
     const int filterResult = verifyFilterContract(view, table);
     if (filterResult != 0) return filterResult;
 

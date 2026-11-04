@@ -24,6 +24,7 @@
 #include "models/TaskTableModel.h"
 #include "ui/widgets/PaginationWidget.h"
 #include "utils/PathUtil.h"
+#include "text_selection_contract.h"
 
 namespace {
 bool insertTask(int index)
@@ -515,6 +516,7 @@ int main(int argc, char *argv[])
     if (model->rowCount() != 2
         || model->data(model->index(0, TaskTableModel::ColTaskNo)).toString() != QStringLiteral("20200101-000"))
         return 87;
+    if (!verifyCellSelection(table, TaskTableModel::ColTitle)) return 180;
     const int filterResult = verifyFilterContract(view, table);
     if (filterResult != 0) return filterResult;
     const int handlerResult = verifyHandlerFilterContract(view, table);

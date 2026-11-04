@@ -1,6 +1,7 @@
 #include "AppTheme.h"
 
 #include <QApplication>
+#include <QAbstractButton>
 #include <QAbstractScrollArea>
 #include <QAbstractItemView>
 #include <QCalendarWidget>
@@ -294,6 +295,25 @@ private:
 void styleControls(QWidget *root)
 {
     if (!root) return;
+    auto labels = root->findChildren<QLabel *>();
+    if (auto *label = qobject_cast<QLabel *>(root)) labels.append(label);
+    for (auto *label : labels) {
+        if (label->text().isEmpty() || label->property("appUiNoTextSelection").toBool()) continue;
+        bool decoration = false;
+        for (QWidget *parent = label; parent; parent = parent->parentWidget()) {
+            if (parent->objectName() == QStringLiteral("titlebar")
+                || qobject_cast<QAbstractButton *>(parent)
+                || qobject_cast<QComboBox *>(parent)
+                || qobject_cast<QDateEdit *>(parent)
+                || qobject_cast<QCalendarWidget *>(parent)) { decoration = true; break; }
+        }
+        if (!decoration) {
+            label->setTextInteractionFlags(label->textInteractionFlags()
+                | Qt::TextSelectableByMouse | Qt::TextSelectableByKeyboard);
+            label->setFocusPolicy(Qt::ClickFocus);
+            label->setCursor(Qt::IBeamCursor);
+        }
+    }
     auto views = root->findChildren<QAbstractItemView *>();
     if (auto *view = qobject_cast<QAbstractItemView *>(root)) views.append(view);
     for (auto *view : views) {

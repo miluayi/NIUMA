@@ -2,6 +2,9 @@
 #include <QElapsedTimer>
 #include <QThread>
 #include <cstdio>
+#include <QStandardItemModel>
+#include "widgets/CopyableTableView.h"
+#include "text_selection_contract.h"
 #ifdef Q_OS_WIN
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -57,6 +60,56 @@ inline bool physicalClick(QWidget &window, QWidget *target, const QPoint &local)
     Q_UNUSED(window) Q_UNUSED(target) Q_UNUSED(local)
     return true;
 #endif
+}
+
+inline int verifyPhysicalTextSelection(MainWindow &window)
+{
+#ifdef Q_OS_WIN
+    QStandardItemModel model(1, 1);
+    model.setData(model.index(0,0), QStringLiteral("任务资料名称 native copy 012345"));
+    CopyableTableView table(&window);
+    table.setModel(&model);
+    table.setGeometry(240,190,600,120);
+    table.setColumnWidth(0,560);
+    table.show();
+    table.raise();
+    QApplication::processEvents();
+    const QRect rect = table.visualRect(model.index(0,0));
+    const QPoint start = table.viewport()->mapTo(&window, QPoint(rect.left()+10,rect.center().y()));
+    const QPoint end = table.viewport()->mapTo(&window, QPoint(rect.left()+160,rect.center().y()));
+    const HWND root=reinterpret_cast<HWND>(window.winId());
+    POINT first{qRound(start.x()*window.devicePixelRatioF()),qRound(start.y()*window.devicePixelRatioF())};
+    POINT last{qRound(end.x()*window.devicePixelRatioF()),qRound(end.y()*window.devicePixelRatioF())};
+    if (!ClientToScreen(root,&first) || !ClientToScreen(root,&last)) return 310;
+    DWORD pid=0;
+    GetWindowThreadProcessId(WindowFromPoint(first),&pid);
+    if (pid!=GetCurrentProcessId()) return 311;
+    INPUT events[6]={};
+    for (int i=0;i<6;++i) {
+        const int step=qBound(0,i-1,3);
+        const POINT point{first.x+(last.x-first.x)*step/3,first.y};
+        events[i].type=INPUT_MOUSE;
+        events[i].mi.dx=MulDiv(point.x-GetSystemMetrics(SM_XVIRTUALSCREEN),65535,GetSystemMetrics(SM_CXVIRTUALSCREEN)-1);
+        events[i].mi.dy=MulDiv(point.y-GetSystemMetrics(SM_YVIRTUALSCREEN),65535,GetSystemMetrics(SM_CYVIRTUALSCREEN)-1);
+        events[i].mi.dwFlags=MOUSEEVENTF_ABSOLUTE|MOUSEEVENTF_VIRTUALDESK|MOUSEEVENTF_MOVE|MOUSEEVENTF_MOVE_NOCOALESCE;
+    }
+    events[1].mi.dwFlags|=MOUSEEVENTF_LEFTDOWN;
+    events[5].mi.dwFlags|=MOUSEEVENTF_LEFTUP;
+    POINT previous;
+    GetCursorPos(&previous);
+    const bool sent=SendInput(6,events,sizeof(INPUT))==6;
+    QElapsedTimer wait;
+    wait.start();
+    while(wait.elapsed()<250){QApplication::processEvents();QThread::msleep(5);}
+    SetCursorPos(previous.x,previous.y);
+    auto *editor=table.findChild<QLineEdit *>(QStringLiteral("cellCopyText"));
+    if(!sent || !editor || editor->selectedText().isEmpty()) return 312;
+    selectionCopy(editor);
+    if(QApplication::clipboard()->text()!=editor->selectedText()) return 313;
+#else
+    Q_UNUSED(window)
+#endif
+    return 0;
 }
 
 inline int verifyPhysicalNavigation(MainWindow &window, QListWidget *sidebar)

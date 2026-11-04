@@ -26,6 +26,7 @@
 #include <QSizePolicy>
 #include <QStandardItemModel>
 #include <QTableView>
+#include "widgets/CopyableTableView.h"
 #include <QUrl>
 #include <QVBoxLayout>
 #include <QWheelEvent>
@@ -342,7 +343,7 @@ void ReferenceView::setupTable()
     cardLayout->setSpacing(0);
 
     // QTableView
-    tableView_ = new QTableView(cardFrame);
+    tableView_ = new CopyableTableView(cardFrame);
     tableView_->setObjectName("referenceTable");
     tableView_->setSelectionBehavior(QAbstractItemView::SelectRows);
     tableView_->setSelectionMode(QAbstractItemView::SingleSelection);
