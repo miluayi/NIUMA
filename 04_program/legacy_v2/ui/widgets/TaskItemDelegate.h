@@ -16,8 +16,9 @@
 #pragma once
 
 #include <QStyledItemDelegate>
+#include "CopyTextLayout.h"
 
-class TaskItemDelegate : public QStyledItemDelegate {
+class TaskItemDelegate : public QStyledItemDelegate, public CopyTextProvider {
     Q_OBJECT
 
 public:
@@ -28,6 +29,7 @@ public:
     QSize sizeHint(const QStyleOptionViewItem &option,
                    const QModelIndex &index) const override;
     static int categoryBadgeWidth(const QString &category);
+    CopyTextLayout copyTextLayout(const QStyleOptionViewItem &,const QModelIndex &) const override;
     static void paintCategoryBadge(QPainter *painter, const QRect &rect,
                                    const QString &category);
 

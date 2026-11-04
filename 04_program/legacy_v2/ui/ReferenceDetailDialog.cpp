@@ -11,6 +11,7 @@
  */
 
 #include "ReferenceDetailDialog.h"
+#include "AppTheme.h"
 
 #include <QDesktopServices>
 #include <QFont>
@@ -52,6 +53,7 @@ ReferenceDetailDialog::ReferenceDetailDialog(int refId, QWidget *parent)
 {
     setupUI();
     loadData();
+    AppTheme::prepareWindow(*this);
 }
 
 // ============================================================================

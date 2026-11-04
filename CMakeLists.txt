@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(NIUMA_V3 VERSION 3.1.6 LANGUAGES CXX)
+project(NIUMA_V3 VERSION 3.1.7 LANGUAGES CXX)
 
 include(CTest)
 

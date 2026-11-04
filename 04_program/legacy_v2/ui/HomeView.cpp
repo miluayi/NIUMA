@@ -9,6 +9,9 @@
 #include "HomeView.h"
 
 #include <QDate>
+#include <QApplication>
+#include <QTimer>
+#include <QPointer>
 #include <QEvent>
 #include <QFrame>
 #include <QGridLayout>
@@ -518,6 +521,8 @@ void HomeView::loadFocusTasks()
 
         // 任务名称 —— 不拉伸，五角星紧跟其后
         QLabel *nameLabel = createTaskNameLabel(task, false);
+        nameLabel->setProperty("taskId",task.id);
+        nameLabel->installEventFilter(this);
         nameLabel->setFont(QFont(QStringLiteral("Segoe UI"), 17));
         rowLayout->addWidget(nameLabel);
         rowLayout->addSpacing(10);
@@ -625,6 +630,8 @@ void HomeView::loadInProgressTasks()
         // 任务名称（逾期红色）—— 不拉伸，五角星紧跟其后
         bool overdue = task.isOverdue() && !task.isCompleted();
         QLabel *nameLabel = createTaskNameLabel(task, overdue);
+        nameLabel->setProperty("taskId",task.id);
+        nameLabel->installEventFilter(this);
         nameLabel->setFont(QFont(QStringLiteral("Segoe UI"), 15));
         rowLayout->addWidget(nameLabel);
         rowLayout->addSpacing(10);
@@ -892,6 +899,24 @@ void HomeView::onIgnorePeriodicClicked()
 
 bool HomeView::eventFilter(QObject *watched, QEvent *event)
 {
+    if (auto *label=qobject_cast<QLabel *>(watched)) {
+        if (event->type()==QEvent::MouseButtonPress) {
+            auto *mouse=static_cast<QMouseEvent *>(event);
+            if(mouse->button()==Qt::LeftButton) label->setProperty("copyPress",mouse->pos());
+        } else if (event->type()==QEvent::MouseButtonRelease) {
+            auto *mouse=static_cast<QMouseEvent *>(event);
+            if(mouse->button()==Qt::LeftButton && label->property("copyPress").isValid()
+                && (mouse->pos()-label->property("copyPress").toPoint()).manhattanLength()<QApplication::startDragDistance()) {
+                const int id=label->property("taskId").toInt();
+                QPointer<QLabel> title(label);
+                QTimer::singleShot(0,this,[this,id,title](){
+                    if(title && !title->hasSelectedText()) emit taskClicked(id);
+                });
+            }
+            label->setProperty("copyPress",QVariant());
+        }
+        return QWidget::eventFilter(watched,event);
+    }
     if (event->type() == QEvent::MouseButtonPress) {
         QFrame *row = qobject_cast<QFrame*>(watched);
         if (row) {

@@ -102,10 +102,10 @@ inline int verifyPhysicalTextSelection(MainWindow &window)
     wait.start();
     while(wait.elapsed()<250){QApplication::processEvents();QThread::msleep(5);}
     SetCursorPos(previous.x,previous.y);
-    auto *editor=table.findChild<QLineEdit *>(QStringLiteral("cellCopyText"));
-    if(!sent || !editor || editor->selectedText().isEmpty()) return 312;
-    selectionCopy(editor);
-    if(QApplication::clipboard()->text()!=editor->selectedText()) return 313;
+    if(!sent || table.selectedText().isEmpty()) return 312;
+    selectionCopy(&table);
+    if(QApplication::clipboard()->text()!=table.selectedText()
+        || table.findChild<QLineEdit *>(QStringLiteral("cellCopyText"))) return 313;
 #else
     Q_UNUSED(window)
 #endif

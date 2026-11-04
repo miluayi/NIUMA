@@ -35,6 +35,28 @@ TaskItemDelegate::TaskItemDelegate(QObject *parent)
 {
 }
 
+CopyTextLayout TaskItemDelegate::copyTextLayout(const QStyleOptionViewItem &option,const QModelIndex &index) const
+{
+    QFont font(QStringLiteral("Segoe UI"));
+    font.setPixelSize(14);
+    font.setWeight(QFont::Normal);
+    font.setStyleName(QStringLiteral("Normal"));
+    QString text=index.data().toString();
+    QRect rect=option.rect;
+    Qt::Alignment alignment=Qt::AlignCenter;
+    if (index.column()==TaskTableModel::ColTitle) {
+        const Task task=index.data(Qt::UserRole).value<Task>();
+        text=(task.isKeyTask ? QStringLiteral("【重点】") : QString())+task.title;
+        rect.adjust(14,0,-14,0);
+        alignment=Qt::AlignLeft|Qt::AlignVCenter;
+    }
+    if(index.column()==TaskTableModel::ColCategory || index.column()==TaskTableModel::ColStatus) {
+        const int width=qMax(28,QFontMetrics(font).horizontalAdvance(text)+16);
+        rect=QRect(rect.center().x()-width/2,rect.center().y()-12,width,24);
+    }
+    return {text,font,rect,alignment,false,0};
+}
+
 // ============================================================================
 // paint
 // ============================================================================

@@ -389,7 +389,13 @@ int main(int argc, char *argv[])
 
     TaskDetailView detail(taskId);
     detail.show();
+    const QRect initialTitle=detail.findChild<QLabel *>(QStringLiteral("appUiDetailTitle"))->geometry();
+    const QRect initialBody=detail.findChild<QWidget *>(QStringLiteral("detailBody"))->geometry();
     app.processEvents();
+    QThread::msleep(100);
+    app.processEvents();
+    if(initialTitle!=detail.findChild<QLabel *>(QStringLiteral("appUiDetailTitle"))->geometry()
+        || initialBody!=detail.findChild<QWidget *>(QStringLiteral("detailBody"))->geometry()) return 182;
     if (!capturePopupFrame(&detail,captureDir,"task-detail")) return 67;
     const auto *detailTitle = detail.findChild<QLabel *>(QStringLiteral("appUiDetailTitle"));
     if (!detailTitle || !detailTitle->isVisible()

@@ -1,6 +1,8 @@
 #include "AppTheme.h"
 
 #include <QApplication>
+#include <QCursor>
+#include <QLayout>
 #include <QAbstractButton>
 #include <QAbstractScrollArea>
 #include <QAbstractItemView>
@@ -308,10 +310,16 @@ void styleControls(QWidget *root)
                 || qobject_cast<QCalendarWidget *>(parent)) { decoration = true; break; }
         }
         if (!decoration) {
+            if (!label->property("appUiCopyCursor").isValid())
+                label->setProperty("appUiCopyCursor",QVariant::fromValue(label->cursor()));
             label->setTextInteractionFlags(label->textInteractionFlags()
                 | Qt::TextSelectableByMouse | Qt::TextSelectableByKeyboard);
             label->setFocusPolicy(Qt::ClickFocus);
-            label->setCursor(Qt::IBeamCursor);
+            label->setCursor(label->property("appUiCopyCursor").value<QCursor>());
+            QPalette palette=label->palette();
+            palette.setColor(QPalette::Highlight,QColor("#2463EB"));
+            palette.setColor(QPalette::HighlightedText,Qt::white);
+            label->setPalette(palette);
         }
     }
     auto views = root->findChildren<QAbstractItemView *>();
@@ -645,6 +653,14 @@ protected:
         auto *widget = qobject_cast<QWidget *>(watched);
         // Resize is a hot path: never scan descendants or repolish styles here.
         if (!widget) return QObject::eventFilter(watched, event);
+        if (event->type()==QEvent::CursorChange) {
+            if (auto *label=qobject_cast<QLabel *>(widget)) {
+                const QVariant saved=label->property("appUiCopyCursor");
+                if (saved.isValid() && label->cursor().shape()!=saved.value<QCursor>().shape())
+                    label->setCursor(saved.value<QCursor>());
+            }
+            return QObject::eventFilter(watched,event);
+        }
         if (event->type() == QEvent::Resize) {
             if (qobject_cast<QComboBox *>(widget)) {
                 if (auto *arrow = widget->findChild<QLabel *>(QStringLiteral("appUiComboArrow"), Qt::FindDirectChildrenOnly))
@@ -689,19 +705,7 @@ protected:
                 == app_.property("appUiTypographyVersion").toInt()) {
             return QObject::eventFilter(watched, event);
         }
-        QPointer<QWidget> guarded(widget);
-        QTimer::singleShot(0, this, [this, guarded]() {
-            if (!guarded) return;
-            const int size = app_.property("appUiFontPixelSize").toInt();
-            const auto weight = selectedWeight(app_.property("appUiFontWeight").toInt());
-            const int version = app_.property("appUiTypographyVersion").toInt();
-            applyWidgetTypography(guarded, size, weight, version);
-            for (QWidget *child : guarded->findChildren<QWidget *>()) {
-                if (child->property("appUiTypographyVersion").toInt() != version) {
-                    applyWidgetTypography(child, size, weight, version);
-                }
-            }
-        });
+        AppTheme::prepareWindow(*widget);
         return QObject::eventFilter(watched, event);
     }
 
@@ -711,6 +715,31 @@ private:
 };
 
 } // namespace
+
+void AppTheme::prepareWindow(QWidget &window)
+{
+    styleControls(&window);
+    const int version=qApp->property("appUiTypographyVersion").toInt();
+    auto widgets=window.findChildren<QWidget *>();
+    widgets.prepend(&window);
+    if (version>0) {
+        for(auto *widget:widgets) {
+            if(widget->property("appUiTypographyVersion").toInt()!=version)
+                applyWidgetTypography(widget,qApp->property("appUiFontPixelSize").toInt(),
+                    selectedWeight(qApp->property("appUiFontWeight").toInt()),version);
+        }
+    }
+    // Resolve font metrics and nested layouts before a dialog can paint.
+    for(auto *widget:widgets) {
+        widget->ensurePolished();
+        if(widget->layout()) widget->layout()->activate();
+        if(auto *view=qobject_cast<QAbstractItemView *>(widget)) view->doItemsLayout();
+    }
+    for(auto it=widgets.crbegin();it!=widgets.crend();++it) {
+        (*it)->ensurePolished();
+        if((*it)->layout()) (*it)->layout()->activate();
+    }
+}
 
 QString AppTheme::preferredFontFamily(const QStringList &availableFamilies)
 {

@@ -1,4 +1,5 @@
 #include <QApplication>
+#include "text_selection_contract.h"
 #include <QDate>
 #include <QDir>
 #include <QEvent>
@@ -269,6 +270,18 @@ int main(int argc, char *argv[])
     const auto *overdueCell = overdueRows.at(2)->findChild<QLabel *>(QStringLiteral("HomeDeadlineCell"));
     if (!overdueCell || overdueCell->text() != QStringLiteral("逾期")) return 36;
     if (!home->grab().save(QDir(root).filePath(QStringLiteral("home-overdue-order.png")))) return 37;
+    QLabel *copyTitle=nullptr;
+    for(auto *label:home->findChildren<QLabel *>(QStringLiteral("appUiTaskTitle")))
+        if(label->isVisible()){copyTitle=label;break;}
+    if(!copyTitle || !verifyLabelSelection(copyTitle)) return 180;
+    QObject::disconnect(home,&HomeView::taskClicked,nullptr,nullptr);
+    int opened=0;
+    QObject::connect(home,&HomeView::taskClicked,home,[&opened](int id){if(id>0) ++opened;});
+    const QPoint click=copyTitle->rect().center();
+    selectionMouse(copyTitle,QEvent::MouseButtonPress,click);
+    selectionMouse(copyTitle,QEvent::MouseButtonRelease,click);
+    app.processEvents();
+    if(opened!=1) return 181;
 
     DatabaseManager::instance().close();
     return 0;

@@ -14,6 +14,7 @@
  */
 
 #include "TaskDetailView.h"
+#include "AppTheme.h"
 
 #include <QAbstractItemModel>
 #include <QDesktopServices>
@@ -78,9 +79,15 @@
  *   - Qt::UserRole     → 时间字符串
  *   - Qt::UserRole + 1 → remarkId（仅备注列表）
  */
-class TimelineDelegate : public QStyledItemDelegate {
+class TimelineDelegate : public QStyledItemDelegate, public CopyTextProvider {
 public:
     using DeleteCallback = std::function<void(int)>;
+    CopyTextLayout copyTextLayout(const QStyleOptionViewItem &option,const QModelIndex &index) const override {
+        QFont font(QStringLiteral("Segoe UI"),10);
+        font.setStyleName(QStringLiteral("Normal"));
+        return {index.data().toString(),font,option.rect.adjusted(24,24,showDeleteButton_ ? -36 : -8,-4),
+                Qt::AlignLeft|Qt::AlignTop,true,4};
+    }
 
     explicit TimelineDelegate(bool showDeleteButton, QObject *parent = nullptr)
         : QStyledItemDelegate(parent)
@@ -232,6 +239,7 @@ TaskDetailView::TaskDetailView(int taskId, QWidget *parent)
 {
     setupUI();
     refreshData();
+    AppTheme::prepareWindow(*this);
 }
 
 void TaskDetailView::resizeEvent(QResizeEvent *event)
