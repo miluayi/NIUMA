@@ -5,6 +5,9 @@
 #include <QGlyphRun>
 #include <QThread>
 #include <QComboBox>
+#include <QCompleter>
+#include <QAbstractItemView>
+#include <QElapsedTimer>
 #include <QDateEdit>
 #include <QDir>
 #include <QFile>
@@ -25,15 +28,21 @@
 #include <QStackedWidget>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QStyleFactory>
 #include <QTableView>
 
 #include "DatabaseManager.h"
 #include "MainWindow.h"
+#include "AppTheme.h"
 #include "PathUtil.h"
 #include "SettingsView.h"
 #include "TaskDetailView.h"
 #include "TaskCreateDialog.h"
 #include "ReferenceCreateDialog.h"
+#include "TaskEditDialog.h"
+#include "ReferenceEditDialog.h"
+#include "PeriodicTaskCreateDialog.h"
+#include "widgets/YearPicker.h"
 #include "ui/widgets/DragDropArea.h"
 
 static bool capturePopupFrame(QWidget *popup, const QString &directory, const QString &name)
@@ -47,6 +56,112 @@ static bool capturePopupFrame(QWidget *popup, const QString &directory, const QS
     const QPoint corner=popup->mapToGlobal(QPoint());
     return popup->screen()->grabWindow(0,corner.x()-6,corner.y()-6,64,64)
         .save(QDir(directory).filePath(name+"-native-frame.png"));
+}
+
+static bool verifyPopupImage(QWidget *popup, const QString &directory, const QString &name)
+{
+    QElapsedTimer wait;
+    wait.start();
+    while (!popup->isVisible() && wait.elapsed()<1500) {
+        QApplication::processEvents(); QThread::msleep(5);
+    }
+    QApplication::processEvents();
+    const QImage image=popup->grab().toImage().convertToFormat(QImage::Format_ARGB32);
+    bool valid=popup->isVisible() && !image.isNull()
+        && image.save(QDir(directory).filePath(name+"-dropdown.png"));
+    const QPoint position=popup->mapToGlobal(QPoint());
+    const QImage desktop=popup->screen()->grabWindow(0,position.x(),position.y(),popup->width(),popup->height()).toImage();
+    valid=valid && !desktop.isNull() && desktop.save(QDir(directory).filePath(name+"-desktop.png"));
+    if (!desktop.isNull()) {
+        const QColor surface=desktop.pixelColor(qRound(12*popup->devicePixelRatioF()),desktop.height()/2);
+        valid=valid && surface.red()>235 && surface.green()>235 && surface.blue()>235;
+    }
+    if (valid) {
+        // The surface and its shadow must both end in transparent corners.
+        for (QPoint point : {QPoint(0,0),QPoint(image.width()-1,0),
+                             QPoint(0,image.height()-1),QPoint(image.width()-1,image.height()-1)})
+            valid=valid && qAlpha(image.pixel(point))==0;
+        const qreal scale=popup->devicePixelRatioF();
+        const int inset=qRound(9*scale);
+        // No white rectangle in the arcs, and a genuine soft alpha shadow below.
+        for (QPoint point : {QPoint(inset,inset),QPoint(image.width()-1-inset,inset),
+                             QPoint(inset,image.height()-1-inset),
+                             QPoint(image.width()-1-inset,image.height()-1-inset)})
+            valid=valid && qAlpha(image.pixel(point))<90;
+        const int shadow=qAlpha(image.pixel(image.width()/2,image.height()-qRound(4*scale)));
+        valid=valid && shadow>0 && shadow<90
+            && qAlpha(image.pixel(image.width()/2,image.height()/2))==255;
+#ifdef Q_OS_WIN
+        const HWND handle=reinterpret_cast<HWND>(popup->internalWinId());
+        valid=valid && !(GetWindowLongPtrW(handle,GWL_STYLE)&(WS_CAPTION|WS_THICKFRAME))
+            && popup->mask().isEmpty();
+        RECT client,bounds;
+        GetClientRect(handle,&client);
+        GetWindowRect(handle,&bounds);
+        valid=valid && client.right==bounds.right-bounds.left && client.bottom==bounds.bottom-bounds.top
+            && client.right==qRound(popup->width()*scale) && client.bottom==qRound(popup->height()*scale);
+#endif
+    }
+    if (!valid) fprintf(stderr,"Dropdown corner/shadow failed: %s surface=%d visible=%d type=%x size=%dx%d style=%s\n",
+        qPrintable(name),popup->property("appUiPopupSurface").toBool(),popup->isVisible(),int(popup->windowType()),
+        popup->width(),popup->height(),qPrintable(popup->styleSheet()));
+    return valid;
+}
+
+static bool verifyComboCorners(QComboBox *combo, const QString &directory, const QString &name)
+{
+    combo->showPopup();
+    QWidget *popup=combo->view()->window();
+    const bool valid=verifyPopupImage(popup,directory,name);
+    const int original=combo->currentIndex();
+    // Retain normal keyboard choice and Escape dismissal with the new surface.
+    QKeyEvent end(QEvent::KeyPress,Qt::Key_End,Qt::NoModifier);
+    QKeyEvent enter(QEvent::KeyPress,Qt::Key_Return,Qt::NoModifier);
+    QApplication::sendEvent(combo->view(),&end);
+    QApplication::sendEvent(combo->view(),&enter);
+    const bool selected=!popup->isVisible() && combo->currentIndex()==combo->count()-1;
+    combo->setCurrentIndex(original);
+    combo->showPopup();
+    QKeyEvent escape(QEvent::KeyPress,Qt::Key_Escape,Qt::NoModifier);
+    QApplication::sendEvent(combo->view(),&escape);
+    const bool dismissed=!popup->isVisible() && combo->currentIndex()==original;
+    combo->hidePopup();
+    QApplication::processEvents();
+    return valid && selected && dismissed;
+}
+
+static bool verifyAllCombos(QWidget *root, const QString &directory, const QString &prefix)
+{
+    int number=0;
+    for (auto *combo : root->findChildren<QComboBox *>()) {
+        if (!combo->isVisible() || combo->count()==0 || dynamic_cast<YearPicker *>(combo)) continue;
+        for (QWidget *ancestor=combo->parentWidget();ancestor;ancestor=ancestor->parentWidget())
+            if (auto *scroll=qobject_cast<QScrollArea *>(ancestor)) scroll->ensureWidgetVisible(combo,0,0);
+        QApplication::processEvents();
+        // At high DPI the test main window's minimum size can exceed the screen.
+        // Bring the tested control onto the monitor before opening its popup.
+        const QRect available=combo->screen()->availableGeometry();
+        const QPoint anchor=combo->mapToGlobal(combo->rect().center());
+        if (!available.adjusted(20,40,-20,-40).contains(anchor)) {
+            QWidget *window=combo->window();
+            window->move(window->pos()+available.center()-anchor);
+            QApplication::processEvents();
+        }
+        const QString name=prefix+"-"+QString::number(++number)+"-"+combo->objectName();
+        if (!verifyComboCorners(combo,directory,name)) return false;
+        if (auto *completer=combo->completer()) {
+            // Inline completion has no dropdown in the product.
+            if (completer->completionMode()==QCompleter::InlineCompletion) continue;
+            completer->setCompletionPrefix(QString());
+            completer->complete();
+            const bool valid=verifyPopupImage(completer->popup(),directory,name+"-completion");
+            if (completer->completionCount()<=completer->maxVisibleItems()
+                && completer->popup()->verticalScrollBar()->maximum()>0) return false;
+            completer->popup()->hide();
+            if (!valid) return false;
+        }
+    }
+    return true;
 }
 
 int main(int argc, char *argv[])
@@ -371,6 +486,46 @@ int main(int argc, char *argv[])
         }
     }
     if (!combo || !dateEdit) return 20;
+    for (int page=0;page<sidebar->count();++page) {
+        if (page==7) continue;
+        sidebar->setCurrentRow(page);
+        app.processEvents();
+        if (!verifyAllCombos(&window,captureDir,QString("page-%1").arg(page))) return 183;
+    }
+    {
+        TaskCreateDialog create(&window);
+        create.show(); app.processEvents();
+        if (!verifyAllCombos(&create,captureDir,"task-create")) return 184;
+        create.reject();
+    }
+    {
+        TaskEditDialog edit(taskId,&window);
+        edit.show(); app.processEvents();
+        if (!verifyAllCombos(&edit,captureDir,"task-edit")) return 185;
+        edit.reject();
+    }
+    {
+        ReferenceCreateDialog create(&window);
+        create.show(); app.processEvents();
+        if (!verifyAllCombos(&create,captureDir,"reference-create")) return 186;
+        create.reject();
+    }
+    {
+        QSqlQuery referenceId(DatabaseManager::instance().database());
+        if (!referenceId.exec("SELECT id FROM reference_material ORDER BY id LIMIT 1") || !referenceId.next()) return 187;
+        ReferenceEditDialog edit(referenceId.value(0).toInt(),&window);
+        edit.show(); app.processEvents();
+        if (!verifyAllCombos(&edit,captureDir,"reference-edit")) return 187;
+        edit.reject();
+    }
+    {
+        PeriodicTaskCreateDialog create(&window);
+        create.show(); app.processEvents();
+        if (!verifyAllCombos(&create,captureDir,"periodic-create")) return 188;
+        create.reject();
+    }
+    sidebar->setCurrentRow(1);
+    app.processEvents();
     if (!combo->findChild<QWidget *>(QStringLiteral("appUiComboArrow"))) return 21;
     const QPixmap comboCapture = combo->grab();
     if (comboCapture.isNull()
@@ -424,6 +579,27 @@ int main(int argc, char *argv[])
     }
     if (!detail.grab().save(QDir(captureDir).filePath(QStringLiteral("task-detail-font.png")), "PNG")) return 32;
     detail.hide();
+
+    // Exercise classic Windows and Fusion menu painting as well as the host's
+    // default theme, with both a one-item popup and a scrolling list.
+    for (const QString &theme : {QString("Windows"),QString("Fusion")}) {
+        QComboBox fixture;
+        fixture.setObjectName("dropdownThemeFixture");
+        fixture.resize(240,36);
+        fixture.setMaxVisibleItems(5);
+        auto *style=QStyleFactory::create(theme);
+        if (!style) return 189;
+        style->setParent(&fixture);
+        fixture.setStyle(style);
+        fixture.view()->setStyle(style);
+        fixture.view()->window()->setStyle(style);
+        fixture.addItem(QStringLiteral("单条选项 NIUMA 0123"));
+        AppTheme::prepareWindow(fixture);
+        fixture.show(); app.processEvents();
+        if (!verifyComboCorners(&fixture,captureDir,theme+"-single")) return 189;
+        for (int row=1;row<30;++row) fixture.addItem(QStringLiteral("滚动选项 %1").arg(row));
+        if (!verifyComboCorners(&fixture,captureDir,theme+"-scrolling")) return 190;
+    }
 
     DatabaseManager::instance().close();
     return 0;

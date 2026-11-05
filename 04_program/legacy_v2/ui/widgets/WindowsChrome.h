@@ -39,11 +39,12 @@ inline bool legacy() {
 inline void prepare(QWidget *widget) {
     if (!widget) return;
     widget->setAttribute(Qt::WA_DontCreateNativeAncestors);
-    const bool fallback=legacy();
+    const bool popupSurface=widget->property("appUiPopupSurface").toBool();
+    const bool fallback=popupSurface || legacy();
     widget->setProperty("appUiLegacyCorners",fallback);
     widget->setAttribute(Qt::WA_TranslucentBackground,fallback);
     widget->setAttribute(Qt::WA_StyledBackground,true);
-    if (fallback) {
+    if (fallback && !popupSurface) {
         if (!widget->internalWinId() && widget->windowType()==Qt::Popup)
             widget->setWindowFlag(Qt::FramelessWindowHint);
         LegacyRoundedFrame::install(widget);
@@ -61,8 +62,13 @@ inline void configure(QWidget *widget) {
     const HWND handle=reinterpret_cast<HWND>(widget->internalWinId());
     if (!handle) return;
     const bool fallback=widget->property("appUiLegacyCorners").toBool();
-    LONG_PTR style=GetWindowLongPtrW(handle,GWL_STYLE)|WS_THICKFRAME;
-    style=fallback ? style & ~WS_CAPTION : style | WS_CAPTION;
+    const bool popupSurface=widget->property("appUiPopupSurface").toBool();
+    LONG_PTR style=GetWindowLongPtrW(handle,GWL_STYLE);
+    if (popupSurface) style &= ~(WS_CAPTION|WS_THICKFRAME|WS_BORDER|WS_DLGFRAME);
+    else {
+        style |= WS_THICKFRAME;
+        style=fallback ? style & ~WS_CAPTION : style | WS_CAPTION;
+    }
     SetWindowLongPtrW(handle,GWL_STYLE,style);
     const HMODULE dwm=GetModuleHandleW(L"dwmapi.dll");
     using Attribute=HRESULT (WINAPI *)(HWND,DWORD,LPCVOID,DWORD);
@@ -81,7 +87,8 @@ inline void configure(QWidget *widget) {
     }
     widget->setProperty("appUiNativeCorners",native);
     if (extend) {
-        const MARGINS margins={1,1,1,1};
+        const int border=popupSurface ? 0 : 1;
+        const MARGINS margins={border,border,border,border};
         extend(handle,&margins);
     }
     syncQtFrameMargins(widget);

@@ -9,6 +9,7 @@
 #include <QCalendarWidget>
 #include <QCheckBox>
 #include <QComboBox>
+#include <QCompleter>
 #include <QDate>
 #include <QDateEdit>
 #include <QEvent>
@@ -44,6 +45,7 @@
 
 #include "application/settings/SettingsUseCase.h"
 #include "widgets/RoundedCornerFilter.h"
+#include "widgets/ComboPopupSurface.h"
 
 namespace {
 
@@ -109,8 +111,6 @@ QPixmap appUiArrowPixmap()
 }
 
 void styleDateEditor(QDateEdit *edit);
-void roundComboPopup(QWidget *popup);
-void prepareComboPopup(QWidget *popup);
 
 void styleComboBox(QComboBox *combo)
 {
@@ -122,7 +122,11 @@ void styleComboBox(QComboBox *combo)
             " /*appUiComboArrow*/"));
     }
     QWidget *popup = combo->view()->window();
-    prepareComboPopup(popup);
+    ComboPopupSurface::install(popup,combo->view());
+    if (auto *completer=combo->completer(); completer && completer->completionMode()!=QCompleter::InlineCompletion) {
+        auto *suggestions=completer->popup();
+        ComboPopupSurface::install(suggestions,suggestions,completer);
+    }
     auto *arrow = combo->findChild<QLabel *>(QStringLiteral("appUiComboArrow"));
     if (!arrow) {
         arrow = new QLabel(combo);
@@ -148,61 +152,6 @@ void styleCheckBox(QCheckBox *box)
         " QCheckBox::indicator:checked { border:1px solid #2463EB; background:#2463EB;"
         " image:url(:/icons/app_check.svg); }"));
     box->setProperty("appUiCheckStyled", true);
-}
-
-void roundComboPopup(QWidget *popup)
-{
-    if (!popup || popup->width() <= 0 || popup->height() <= 0) return;
-#ifdef Q_OS_WIN
-    NativePopupFrame::apply(popup);
-    return;
-#endif
-    popup->setAttribute(Qt::WA_TranslucentBackground, false);
-    popup->setAttribute(Qt::WA_StyledBackground, true);
-    popup->setAutoFillBackground(true);
-    popup->setProperty("appUiTransparentCorners", true);
-    QPainterPath shape;
-    shape.addRoundedRect(QRectF(popup->rect()).adjusted(0.5, 0.5, -0.5, -0.5), 8, 8);
-    popup->setMask(QRegion(shape.toFillPolygon().toPolygon()));
-}
-
-class ComboPopupRounder final : public QObject
-{
-public:
-    explicit ComboPopupRounder(QWidget *popup) : QObject(popup), popup_(popup) {}
-
-protected:
-    bool eventFilter(QObject *watched, QEvent *event) override
-    {
-        if (watched == popup_ && (event->type() == QEvent::Show || event->type() == QEvent::Resize)) {
-            roundComboPopup(popup_);
-            QTimer::singleShot(0, this, [this]() { roundComboPopup(popup_); });
-        }
-        return QObject::eventFilter(watched, event);
-    }
-
-private:
-    QPointer<QWidget> popup_;
-};
-
-void prepareComboPopup(QWidget *popup)
-{
-    if (!popup) return;
-#ifdef Q_OS_WIN
-    WindowsChrome::prepare(popup);
-#else
-    popup->setAttribute(Qt::WA_TranslucentBackground, false);
-#endif
-    popup->setAttribute(Qt::WA_StyledBackground, true);
-    popup->setAutoFillBackground(true);
-    popup->setObjectName(QStringLiteral("appUiComboPopup"));
-    popup->setStyleSheet(QStringLiteral(
-        "QFrame#appUiComboPopup { background:#FFFFFF; border:1px solid #DCE3EF; border-radius:8px; }"));
-    if (!popup->property("appUiPopupRounderInstalled").toBool()) {
-        popup->installEventFilter(new ComboPopupRounder(popup));
-        popup->setProperty("appUiPopupRounderInstalled", true);
-    }
-    roundComboPopup(popup);
 }
 
 QString removeBoldStyles(QString style)
@@ -678,9 +627,6 @@ protected:
             return QObject::eventFilter(watched, event);
         if (event->type() == QEvent::Show) {
             styleControls(widget);
-            if (auto *combo = qobject_cast<QComboBox *>(widget)) {
-                roundComboPopup(combo->view()->window());
-            }
         }
         QDateEdit *dateEdit = nullptr;
         for (QWidget *ancestor = widget; ancestor; ancestor = ancestor->parentWidget()) {
