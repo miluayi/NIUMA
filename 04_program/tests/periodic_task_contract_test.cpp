@@ -1,4 +1,5 @@
 #include <QApplication>
+#include "detail_title_contract.h"
 #include <QComboBox>
 #include <QCheckBox>
 #include <QDialog>
@@ -6,6 +7,7 @@
 #include <QKeyEvent>
 #include <QLabel>
 #include <QLineEdit>
+#include <QPlainTextEdit>
 #include <QPushButton>
 #include <QSqlQuery>
 #include <QTableWidget>
@@ -80,7 +82,7 @@ int main(int argc, char *argv[])
     createDialog.show();
     app.processEvents();
     app.processEvents();
-    auto *templateName = createDialog.findChild<QLineEdit *>(QStringLiteral("periodicTemplateNameEdit"));
+    auto *templateName = createDialog.findChild<QPlainTextEdit *>(QStringLiteral("periodicTemplateNameEdit"));
     auto *templateEnabled = createDialog.findChild<QCheckBox *>(QStringLiteral("periodicTemplateEnabledCheck"));
     auto *templateSource = createDialog.findChild<QComboBox *>(QStringLiteral("periodicSourceCombo"));
     auto *templateTag = createDialog.findChild<QComboBox *>(QStringLiteral("periodicTagCombo"));
@@ -118,10 +120,18 @@ int main(int argc, char *argv[])
     if (!view.grab().save(QDir(root).filePath(QStringLiteral("periodic-card.png")))) return 23;
 
     PeriodicTaskCreateDialog editDialog(visualTemplate.taskId);
-    auto *editName = editDialog.findChild<QLineEdit *>(QStringLiteral("periodicTemplateNameEdit"));
+    auto *editName = editDialog.findChild<QPlainTextEdit *>(QStringLiteral("periodicTemplateNameEdit"));
     auto *editSave = editDialog.findChild<QShortcut *>(QStringLiteral("shortcutSavePeriodicTask"));
     if (!editName || !editSave || editSave->key() != QKeySequence::Save
-        || editName->text() != QStringLiteral("S06 表格模板")) return 9;
+        || editName->toPlainText() != QStringLiteral("S06 表格模板")) return 9;
+    editName->setPlainText(QString(45,QChar(0x725B)));
+    editDialog.show(); app.processEvents();
+    if (!verifyThreeLineNameEdit(editName)
+        || !editDialog.grab().save(QDir(root).filePath("periodic-name-45.png"))) return 25;
+    QKeyEvent saveName(QEvent::KeyPress,Qt::Key_Return,Qt::NoModifier);
+    QApplication::sendEvent(editName,&saveName);
+    if (!periodicService.getById(visualTemplate.taskId)
+        || periodicService.getById(visualTemplate.taskId)->name!=QString(45,QChar(0x725B))) return 26;
 
     if (!periodicService.setEnabled(visualTemplate.taskId, false).ok
         || periodicService.getById(visualTemplate.taskId)->isEnabled) return 10;

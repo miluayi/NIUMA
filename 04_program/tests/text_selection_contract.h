@@ -65,12 +65,17 @@ inline bool verifyCellSelection(QAbstractItemView *table, int column)
     selectionMouse(table->viewport(),QEvent::MouseButtonPress,start);
     selectionMouse(table->viewport(),QEvent::MouseButtonRelease,start);
     QObject::disconnect(connection);
+    if (!(copied && clicks==1 && blue>4))
+        fprintf(stderr,"Cell selection: copied=%d clicks=%d blue=%d selected=%s clipboard=%s original=%s\n",
+            copied,clicks,blue,qPrintable(text),qPrintable(QApplication::clipboard()->text()),qPrintable(original));
     return copied && clicks==1 && blue>4;
 }
 
 inline bool verifyLabelSelection(QLabel *label)
 {
-    if (!label || !(label->textInteractionFlags() & Qt::TextSelectableByMouse)) return false;
+    if (!label || !(label->textInteractionFlags() & Qt::TextSelectableByMouse)) {
+        fprintf(stderr,"Label selection unavailable: label=%p flags=%d\n",static_cast<void *>(label),label ? int(label->textInteractionFlags()) : 0);return false;
+    }
     const auto cursor=label->cursor().shape();
     const QRect geometry=label->geometry();
     const QPoint start(8, label->height()/2);
@@ -78,9 +83,12 @@ inline bool verifyLabelSelection(QLabel *label)
     selectionMouse(label, QEvent::MouseButtonPress, start);
     selectionMouse(label, QEvent::MouseMove, end);
     selectionMouse(label, QEvent::MouseButtonRelease, end);
-    if (label->selectedText().isEmpty()) return false;
+    if (label->selectedText().isEmpty()) {fprintf(stderr,"Label selection empty: %s size=%dx%d\n",qPrintable(label->objectName()),label->width(),label->height());return false;}
     QApplication::clipboard()->clear();
     selectionCopy(label);
-    return QApplication::clipboard()->text() == label->selectedText()
-        && label->cursor().shape()==cursor && label->geometry()==geometry;
+    const bool copied=QApplication::clipboard()->text() == label->selectedText();
+    const bool stable=label->cursor().shape()==cursor && label->geometry()==geometry;
+    if (!copied || !stable) fprintf(stderr,"Label selection: copied=%d stable=%d cursor=%d/%d\n",
+        copied,stable,int(label->cursor().shape()),int(cursor));
+    return copied && stable;
 }

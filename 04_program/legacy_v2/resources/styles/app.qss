@@ -30,11 +30,11 @@ QPushButton#btnMinimize, QPushButton#btnMaximize, QPushButton#btnClose {
 QPushButton#btnMinimize:hover, QPushButton#btnMaximize:hover { background:#E9EEF5; }
 QPushButton#btnClose:hover { background:#E9EEF5; color:#111827; }
 
-QLineEdit, QTextEdit, QComboBox, QSpinBox, QDateEdit {
+QLineEdit, QTextEdit, QPlainTextEdit, QComboBox, QSpinBox, QDateEdit {
     background:#FFFFFF; border:1px solid #DCE3EF; border-radius:7px;
     color:#172033; padding:6px 10px; font-size:14px;
 }
-QLineEdit:focus, QTextEdit:focus, QComboBox:focus, QSpinBox:focus, QDateEdit:focus {
+QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus, QComboBox:focus, QSpinBox:focus, QDateEdit:focus {
     border:1px solid #2B72EF;
 }
 QComboBox::drop-down, QDateEdit::drop-down {
@@ -68,7 +68,7 @@ QScrollArea#detailScroll, QWidget#detailBody { background:#FFFFFF; }
 
 QFrame#periodicTaskListCard { background:#FFFFFF; border:1px solid #DCE3EF; border-radius:12px; }
 QTableWidget#periodicTaskTable::item:selected { background:#EAF1FF; color:#172033; }
-QDialog QLineEdit#periodicTemplateNameEdit { min-height:32px; }
+QDialog QPlainTextEdit#periodicTemplateNameEdit { min-height:32px; }
 
 QFrame#referenceListCard { background:#FFFFFF; border:1px solid #DCE3EF; border-radius:12px; }
 QTableView#referenceTable::item:selected { background:#EAF1FF; color:#172033; }

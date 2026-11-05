@@ -36,7 +36,7 @@ QFrame#Card {
 /* ----------------------------------------------------------------------------
    输入框（对应 .form-input / .form-select / .form-textarea）
    ---------------------------------------------------------------------------- */
-QLineEdit, QTextEdit, QComboBox, QSpinBox, QDateEdit {
+QLineEdit, QTextEdit, QPlainTextEdit, QComboBox, QSpinBox, QDateEdit {
     padding: 10px 14px;
     border: 1px solid #E2E8F0;
     border-radius: 8px;
@@ -45,12 +45,12 @@ QLineEdit, QTextEdit, QComboBox, QSpinBox, QDateEdit {
     color: #0F172A;
 }
 
-QLineEdit:focus, QTextEdit:focus, QComboBox:focus, QSpinBox:focus, QDateEdit:focus {
+QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus, QComboBox:focus, QSpinBox:focus, QDateEdit:focus {
     border: 2px solid #2463EB;
     padding: 9px 13px;
 }
 
-QLineEdit::placeholder, QTextEdit::placeholder {
+QLineEdit::placeholder, QTextEdit::placeholder, QPlainTextEdit::placeholder {
     color: #94A3B8;
 }
 

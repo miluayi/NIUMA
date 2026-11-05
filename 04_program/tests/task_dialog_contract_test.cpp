@@ -1,4 +1,5 @@
 #include <QApplication>
+#include "detail_title_contract.h"
 #include <QDate>
 #include <QDateTime>
 #include <QDir>
@@ -179,9 +180,9 @@ int main(int argc, char *argv[])
     if (!query.exec() || !QMetaObject::invokeMethod(&detail, "refreshData", Qt::DirectConnection)) return 34;
     auto *detailDeadline = detail.findChild<QLabel *>(QStringLiteral("deadlineValue"));
     if (!detailDeadline || detailDeadline->text() != expiredDeadline.toString(Qt::ISODate)) return 35;
-    detailTitle->setText(QStringLiteral("这是用于验证任务详情页两行标题高度的较长任务名称，需要完整显示标题末尾的内容"));
+    detailTitle->setText(QString(45, QChar(0x725B)));
     app.processEvents();
-    if (detailTitle->height() < QFontMetrics(detailTitle->font()).lineSpacing() * 2 + 12
+    if (!verifyThreeLineTitle(detailTitle)
         || !detail.grab().save(QDir(qEnvironmentVariable("NIUMA_TEST_ROOT"))
             .filePath(QStringLiteral("task-detail-long-title.png")))) return 33;
     QTimer::singleShot(0, []() {

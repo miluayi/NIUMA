@@ -12,6 +12,7 @@
 
 #include "ReferenceDetailDialog.h"
 #include "AppTheme.h"
+#include "widgets/DetailTitleLabel.h"
 
 #include <QDesktopServices>
 #include <QFont>
@@ -92,12 +93,11 @@ QFrame* ReferenceDetailDialog::buildHeader()
     headerLayout->setContentsMargins(Spacing::XXL, Spacing::XL, Spacing::XL, Spacing::XL);
     headerLayout->setSpacing(Spacing::SM);
 
-    titleLabel_ = new QLabel(header);
+    titleLabel_ = new DetailTitleLabel(header);
     titleLabel_->setObjectName("appUiReferenceDetailTitle");
     QFont titleFont(QStringLiteral("Segoe UI"), 18, QFont::Normal);
     titleLabel_->setFont(titleFont);
-    titleLabel_->setStyleSheet("color: #0F172A; border: none;");
-    titleLabel_->setWordWrap(false);
+    titleLabel_->setStyleSheet("color: #0F172A; border: none; padding: 0 6px;");
 
     closeBtn_ = new QPushButton(QStringLiteral("\u2715"), header);
     closeBtn_->setObjectName("headerCloseBtn");

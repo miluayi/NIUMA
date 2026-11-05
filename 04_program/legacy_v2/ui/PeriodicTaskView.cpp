@@ -272,7 +272,6 @@ void PeriodicTaskView::fillTable()
 
         // 名称
         QTableWidgetItem *nameItem = new QTableWidgetItem(t.name);
-        nameItem->setToolTip(t.name);
         nameItem->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
         nameItem->setData(Qt::UserRole, t.id);
         table_->setItem(i, ColName, nameItem);

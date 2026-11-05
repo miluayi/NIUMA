@@ -1,5 +1,10 @@
 #include <QApplication>
 #include "text_selection_contract.h"
+#include "detail_title_contract.h"
+#include "ReferenceDetailDialog.h"
+#include <QPlainTextEdit>
+#include "widgets/TaskItemDelegate.h"
+#include "models/Task.h"
 #include <QScreen>
 #include <QTextLayout>
 #include <QGlyphRun>
@@ -30,6 +35,9 @@
 #include <QPushButton>
 #include <QStyleFactory>
 #include <QTableView>
+#include <QTableWidget>
+#include <QHelpEvent>
+#include <QToolTip>
 
 #include "DatabaseManager.h"
 #include "MainWindow.h"
@@ -111,7 +119,18 @@ static bool verifyPopupImage(QWidget *popup, const QString &directory, const QSt
 static bool verifyComboCorners(QComboBox *combo, const QString &directory, const QString &name)
 {
     combo->showPopup();
+    // Qt's opaque QRollEffect window must never cover the alpha popup, even
+    // during the first 150 ms (the old steady-state grabs missed this).
+    for (auto *window : QApplication::topLevelWidgets())
+        if (window->isVisible() && QByteArray(window->metaObject()->className())=="QRollEffect") return false;
     QWidget *popup=combo->view()->window();
+    if (name=="Windows-single") {
+        for (int frame=0;frame<3;++frame) {
+            if (frame) QThread::msleep(35);
+            QApplication::processEvents();
+            if (!popup->grab().save(QDir(directory).filePath(QString("combo-opening-%1.png").arg(frame)))) return false;
+        }
+    }
     const bool valid=verifyPopupImage(popup,directory,name);
     const int original=combo->currentIndex();
     // Retain normal keyboard choice and Escape dismissal with the new surface.
@@ -128,6 +147,87 @@ static bool verifyComboCorners(QComboBox *combo, const QString &directory, const
     combo->hidePopup();
     QApplication::processEvents();
     return valid && selected && dismissed;
+}
+
+static bool waitForTooltipHidden()
+{
+    QElapsedTimer timer;
+    timer.start();
+    while (QToolTip::isVisible() && timer.elapsed()<1500) {
+        QApplication::processEvents(); QThread::msleep(10);
+    }
+    return !QToolTip::isVisible();
+}
+
+static bool verifyOverflowTooltips(const QString &directory)
+{
+    QTableWidget table(1,2);
+    table.resize(520,180);
+    table.move(80,80);
+    const QString longText=QStringLiteral("完整名称 <原文> ")+QString(45,QChar(0x725B));
+    table.setItem(0,0,new QTableWidgetItem(QStringLiteral("短名称")));
+    table.setItem(0,1,new QTableWidgetItem(longText));
+    table.setColumnWidth(0,180);
+    table.setColumnWidth(1,180);
+    table.show(); QApplication::processEvents();
+    auto hover=[&](int column) {
+        const QPoint pos=table.visualItemRect(table.item(0,column)).center();
+        QHelpEvent event(QEvent::ToolTip,pos,table.viewport()->mapToGlobal(pos));
+        QApplication::sendEvent(table.viewport(),&event);
+    };
+    hover(0);
+    if (!QToolTip::text().isEmpty()) {fprintf(stderr,"Unexpected short tooltip: %s\n",qPrintable(QToolTip::text()));return false;}
+    hover(1);
+    if (!QToolTip::text().contains(QString(45,QChar(0x725B)))
+        || !QToolTip::text().contains("&lt;原文&gt;")) {fprintf(stderr,"Missing long tooltip: %s\n",qPrintable(QToolTip::text()));return false;}
+    if (!table.grab().save(QDir(directory).filePath("overflow-table.png"))) {fprintf(stderr,"Failed table capture\n");return false;}
+    Task task;
+    task.title=longText;
+    task.isKeyTask=true;
+    table.item(0,1)->setData(Qt::UserRole,QVariant::fromValue(task));
+    table.setItemDelegateForColumn(1,new TaskItemDelegate(&table));
+    hover(1);
+    if (!QToolTip::text().contains(QStringLiteral("【重点】"))) {fprintf(stderr,"Missing custom tooltip: %s\n",qPrintable(QToolTip::text()));return false;}
+    QElapsedTimer paintTimer;
+    paintTimer.start();
+    while (paintTimer.elapsed()<300) {QApplication::processEvents();QThread::msleep(10);}
+    bool capturedBubble=false;
+    for (auto *window : QApplication::topLevelWidgets()) {
+        if (window->isVisible() && QByteArray(window->metaObject()->className())=="QTipLabel") {
+            const QImage bubble=window->grab().toImage();
+            int lightPixels=0;
+            for (int y=0;y<bubble.height();++y) for (int x=0;x<bubble.width();++x)
+                if (bubble.pixelColor(x,y).lightness()>200) ++lightPixels;
+            capturedBubble=lightPixels>bubble.width()*bubble.height()/2
+                && bubble.save(QDir(directory).filePath("overflow-bubble.png"));
+            const QPoint pos=window->mapToGlobal(QPoint());
+            window->screen()->grabWindow(0,pos.x(),pos.y(),window->width(),window->height())
+                .save(QDir(directory).filePath("overflow-bubble-desktop.png"));
+        }
+    }
+    if (!capturedBubble) {fprintf(stderr,"Missing bubble capture\n");return false;}
+    QToolTip::hideText();
+    table.setColumnWidth(1,1200);
+    table.resize(1500,180);
+    QApplication::processEvents();
+    hover(1);
+    if (!waitForTooltipHidden()) {fprintf(stderr,"Wide cell tooltip remained\n");return false;}
+    table.hide();
+    QWidget homeRow;
+    homeRow.setObjectName("InProgressItem");
+    homeRow.resize(220,60);
+    QLabel label(&homeRow);
+    label.setTextFormat(Qt::RichText);
+    label.setText("<span>"+longText.toHtmlEscaped()+"</span>");
+    label.setGeometry(0,0,180,40);
+    homeRow.show(); QApplication::processEvents();
+    QHelpEvent event(QEvent::ToolTip,QPoint(20,20),label.mapToGlobal(QPoint(20,20)));
+    QApplication::sendEvent(&label,&event);
+    if (!QToolTip::text().contains(QString(45,QChar(0x725B)))) {fprintf(stderr,"Missing home tooltip: %s\n",qPrintable(QToolTip::text()));return false;}
+    label.setText(QStringLiteral("已完整显示"));
+    QApplication::sendEvent(&label,&event);
+    if (!waitForTooltipHidden()) {fprintf(stderr,"Short home tooltip remained\n");return false;}
+    return true;
 }
 
 static bool verifyAllCombos(QWidget *root, const QString &directory, const QString &prefix)
@@ -234,6 +334,7 @@ int main(int argc, char *argv[])
         if (!fixture.exec()) return 37;
     }
 
+    QApplication::setEffectEnabled(Qt::UI_AnimateCombo,true);
     MainWindow window;
     window.resize(1440, 900);
     window.show();
@@ -543,6 +644,10 @@ int main(int argc, char *argv[])
     if (dateCapture.isNull()
         || !dateCapture.save(QDir(captureDir).filePath(QStringLiteral("date-popup.png")), "PNG")) return 23;
 
+    fixture.prepare("UPDATE task SET title=? WHERE id=?");
+    fixture.addBindValue(QString(45,QChar(0x725B)));
+    fixture.addBindValue(taskId);
+    if (!fixture.exec()) return 191;
     TaskDetailView detail(taskId);
     detail.show();
     const QRect initialTitle=detail.findChild<QLabel *>(QStringLiteral("appUiDetailTitle"))->geometry();
@@ -579,7 +684,30 @@ int main(int argc, char *argv[])
         }
     }
     if (!detail.grab().save(QDir(captureDir).filePath(QStringLiteral("task-detail-font.png")), "PNG")) return 32;
+    if (!verifyThreeLineTitle(const_cast<QLabel *>(detailTitle))) return 191;
     detail.hide();
+
+    if (!fixture.exec("SELECT id FROM reference_material ORDER BY id LIMIT 1") || !fixture.next()) return 192;
+    const int referenceId=fixture.value(0).toInt();
+    fixture.prepare("UPDATE reference_material SET name=? WHERE id=?");
+    fixture.addBindValue(QString(45,QChar(0x725B)));
+    fixture.addBindValue(referenceId);
+    if (!fixture.exec()) return 192;
+    {
+        ReferenceDetailDialog reference(referenceId);
+        reference.show(); app.processEvents();
+        if (!verifyThreeLineTitle(reference.findChild<QLabel *>("appUiReferenceDetailTitle"))
+            || !reference.grab().save(QDir(captureDir).filePath("reference-title-45.png"))) return 192;
+    }
+    {
+        PeriodicTaskCreateDialog periodic;
+        auto *name=periodic.findChild<QPlainTextEdit *>("periodicTemplateNameEdit");
+        if (!name) return 193;
+        name->setPlainText(QString(45,QChar(0x725B)));
+        periodic.show(); app.processEvents();
+        if (!verifyThreeLineNameEdit(name)
+            || !periodic.grab().save(QDir(captureDir).filePath("periodic-title-45.png"))) return 193;
+    }
 
     // Exercise classic Windows and Fusion menu painting as well as the host's
     // default theme, with both a one-item popup and a scrolling list.
@@ -603,6 +731,7 @@ int main(int argc, char *argv[])
         if (!verifyComboCorners(&fixture,captureDir,theme+"-scrolling")) return 190;
     }
 
+    if (!verifyOverflowTooltips(captureDir)) return 200;
     DatabaseManager::instance().close();
     return 0;
 }

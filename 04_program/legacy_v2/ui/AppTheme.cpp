@@ -47,6 +47,7 @@
 #include "application/settings/SettingsUseCase.h"
 #include "widgets/RoundedCornerFilter.h"
 #include "widgets/ComboPopupSurface.h"
+#include "widgets/OverflowToolTip.h"
 
 namespace {
 
@@ -250,6 +251,7 @@ void styleControls(QWidget *root)
     auto labels = root->findChildren<QLabel *>();
     if (auto *label = qobject_cast<QLabel *>(root)) labels.append(label);
     for (auto *label : labels) {
+        if (label->window()->windowType()==Qt::ToolTip) continue;
         if (label->text().isEmpty() || label->property("appUiNoTextSelection").toBool()) continue;
         bool decoration = false;
         for (QWidget *parent = label; parent; parent = parent->parentWidget()) {
@@ -294,6 +296,9 @@ void styleControls(QWidget *root)
 
 void normalizeLabel(QLabel *label)
 {
+    // QTipLabel is also a QLabel. Its native tooltip background must survive
+    // normal label normalization, or transparent black bubbles can result.
+    if (label && label->window()->windowType()==Qt::ToolTip) return;
     if (!label || label->property("appUiNoLabelReset").toBool()) return;
     static const QRegularExpression semanticText(
         QStringLiteral("\\bcolor\\s*:\\s*#(?:FA423E|40C977|F5B400)\\b"),
@@ -603,6 +608,9 @@ protected:
         auto *widget = qobject_cast<QWidget *>(watched);
         // Resize is a hot path: never scan descendants or repolish styles here.
         if (!widget) return QObject::eventFilter(watched, event);
+        if (widget->window()->windowType()==Qt::ToolTip) return QObject::eventFilter(watched,event);
+        if (event->type()==QEvent::ToolTip && OverflowToolTip::handle(widget,static_cast<QHelpEvent *>(event)))
+            return true;
         if (event->type()==QEvent::CursorChange) {
             if (auto *label=qobject_cast<QLabel *>(widget)) {
                 const QVariant saved=label->property("appUiCopyCursor");
@@ -696,6 +704,9 @@ QString AppTheme::preferredFontFamily(const QStringList &availableFamilies)
 
 void AppTheme::apply(QApplication &app, QWidget &window)
 {
+    // Qt5 animates combos through an opaque QRollEffect snapshot window. Its
+    // temporary black alpha margins flash before our real rounded surface.
+    QApplication::setEffectEnabled(Qt::UI_AnimateCombo,false);
     QString fontError;
     if (!BundledFonts::load(&fontError)) qFatal("%s",qPrintable(fontError));
     const QString fontFamily = preferredFontFamily(QFontDatabase().families());

@@ -13,6 +13,8 @@
  */
 
 #include "PeriodicTaskCreateDialog.h"
+#include "AppTheme.h"
+#include "widgets/MultilineNameEdit.h"
 
 #include <QCheckBox>
 #include <QComboBox>
@@ -103,6 +105,7 @@ PeriodicTaskCreateDialog::PeriodicTaskCreateDialog(QWidget *parent)
     setupUI();
     loadSources();
     loadTags();
+    AppTheme::prepareWindow(*this);
 }
 
 PeriodicTaskCreateDialog::PeriodicTaskCreateDialog(int id, QWidget *parent)
@@ -127,6 +130,7 @@ PeriodicTaskCreateDialog::PeriodicTaskCreateDialog(int id, QWidget *parent)
     loadSources();
     loadTags();
     loadTemplateData();
+    AppTheme::prepareWindow(*this);
 }
 
 // ============================================================================
@@ -204,7 +208,7 @@ void PeriodicTaskCreateDialog::setupUI()
 
     // 通用输入控件样式
     const QString inputStyle =
-        "QLineEdit, QComboBox, QSpinBox, QTimeEdit {"
+        "QLineEdit, QPlainTextEdit, QComboBox, QSpinBox, QTimeEdit {"
         "  padding:7px 10px;"
         "  border:1px solid #E2E8F0;"
         "  border-radius:6px;"
@@ -213,7 +217,7 @@ void PeriodicTaskCreateDialog::setupUI()
         "  color:#0F172A;"
         "  min-height:20px;"
         "}"
-        "QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QTimeEdit:focus {"
+        "QLineEdit:focus, QPlainTextEdit:focus, QComboBox:focus, QSpinBox:focus, QTimeEdit:focus {"
         "  border:2px solid #2463EB;"
         "  padding:6px 9px;"
         "}"
@@ -235,7 +239,7 @@ void PeriodicTaskCreateDialog::setupUI()
 
     // ---- 模板名称（必填） ----
     bodyLayout->addWidget(makeLabel(QStringLiteral("模板名称 *")));
-    nameEdit_ = new QLineEdit(bodyFrame);
+    nameEdit_ = new MultilineNameEdit(bodyFrame);
     nameEdit_->setObjectName("periodicTemplateNameEdit");
     nameEdit_->setPlaceholderText(QStringLiteral("如：月度工作总结"));
     bodyLayout->addWidget(nameEdit_);
@@ -483,7 +487,7 @@ void PeriodicTaskCreateDialog::loadTemplateData()
     originalTask_ = tmpl.value();
 
     // 预填字段
-    nameEdit_->setText(originalTask_.name);
+    nameEdit_->setPlainText(originalTask_.name);
     categoryCombo_->setCurrentText(originalTask_.category);
     periodTypeCombo_->setCurrentText(periodTypeToText(originalTask_.periodType));
     // setCurrentText 会触发 onPeriodTypeChanged()，自动填充执行日选项
@@ -532,7 +536,7 @@ void PeriodicTaskCreateDialog::loadTemplateData()
 
 bool PeriodicTaskCreateDialog::validateForm()
 {
-    if (nameEdit_->text().trimmed().isEmpty()) {
+    if (nameEdit_->toPlainText().trimmed().isEmpty()) {
         StyledMessageBox::warning(this, QStringLiteral("提示"),
                              QStringLiteral("请输入模板名称"));
         nameEdit_->setFocus();
@@ -694,7 +698,7 @@ PeriodicTask PeriodicTaskCreateDialog::getPeriodicTask() const
         tmpl.lastRemindedDate = originalTask_.lastRemindedDate;
     }
 
-    tmpl.name = nameEdit_->text().trimmed();
+    tmpl.name = nameEdit_->toPlainText().replace(QLatin1Char('\n'),QLatin1Char(' ')).trimmed();
     tmpl.category = categoryCombo_->currentText();
     tmpl.periodType = textToPeriodType(periodTypeCombo_->currentText());
     tmpl.periodValue = periodValueSpin_->value();

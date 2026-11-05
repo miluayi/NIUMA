@@ -15,6 +15,7 @@
 
 #include "TaskDetailView.h"
 #include "AppTheme.h"
+#include "widgets/DetailTitleLabel.h"
 
 #include <QAbstractItemModel>
 #include <QDesktopServices>
@@ -356,17 +357,15 @@ QFrame* TaskDetailView::buildHeader()
     statusTagLabel_->hide();
     topRow->addWidget(keyTagLabel_);
     topRow->addWidget(periodicTagLabel_);
-    titleLabel_ = new QLabel(header);
+    titleLabel_ = new DetailTitleLabel(header);
     titleLabel_->setObjectName("appUiDetailTitle");
     QFont titleFont(QStringLiteral("Segoe UI"));
     titleFont.setPixelSize(22);
     titleFont.setWeight(QFont::Normal);
     titleFont.setStyleName(QStringLiteral("Normal"));
     titleLabel_->setFont(titleFont);
-    titleLabel_->setStyleSheet("font-family: Segoe UI; font-size: 22px; font-weight: 400; color: #0F172A; border: none;");
+    titleLabel_->setStyleSheet("font-family: Segoe UI; font-size: 22px; font-weight: 400; color: #0F172A; border: none; padding: 0 6px;");
     titleLabel_->setWordWrap(true);
-    titleLabel_->setMinimumHeight(QFontMetrics(titleLabel_->font()).lineSpacing() * 2 + 12);
-    titleLabel_->setMaximumHeight(QFontMetrics(titleLabel_->font()).lineSpacing() * 2 + 12);
     titleLabel_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     topRow->addWidget(titleLabel_);
     topRow->addStretch();

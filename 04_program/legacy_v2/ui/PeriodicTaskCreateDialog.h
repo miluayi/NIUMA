@@ -20,6 +20,7 @@
 #include "models/PeriodicTask.h"
 
 class QLineEdit;
+class QPlainTextEdit;
 class QComboBox;
 class QSpinBox;
 class QTimeEdit;
@@ -55,7 +56,7 @@ protected:
 private:
     // 控件
     QLabel *titleLabel_;
-    QLineEdit *nameEdit_;
+    QPlainTextEdit *nameEdit_;
     QComboBox *categoryCombo_;
     QComboBox *periodTypeCombo_;
     QSpinBox *periodValueSpin_;
