@@ -130,6 +130,13 @@ set(NIUMA_LEGACY_BACKEND_SOURCES
     legacy_v2/utils/WordExport.cpp)
 
 find_package(Qt5 5.15 REQUIRED COMPONENTS Widgets Sql Concurrent Svg)
+add_library(NiumaV3BundledFonts STATIC legacy_v2/ui/BundledFonts.cpp legacy_v2/resources/embedded_fonts.qrc)
+target_link_libraries(NiumaV3BundledFonts PUBLIC Qt5::Gui)
+target_include_directories(NiumaV3BundledFonts PUBLIC "${NIUMA_LEGACY_ROOT}/ui")
+add_executable(NiumaV3BundledFontContractTest tests/bundled_font_contract_test.cpp)
+target_link_libraries(NiumaV3BundledFontContractTest PRIVATE NiumaV3BundledFonts Qt5::Widgets)
+add_test(NAME niuma_v3_bundled_font_contract COMMAND NiumaV3BundledFontContractTest)
+add_test(NAME niuma_v3_bundled_font_isolated_contract COMMAND NiumaV3BundledFontContractTest --isolated)
 if(WIN32)
     add_library(NiumaV3WindowsChromeSupport STATIC legacy_v2/ui/widgets/WindowsChrome.cpp)
     target_link_libraries(NiumaV3WindowsChromeSupport PRIVATE Qt5::Widgets Qt5::GuiPrivate)
@@ -272,6 +279,13 @@ target_link_libraries(NiumaV3SettingsContractTest PRIVATE Qt5::Widgets Qt5::Sql 
 target_link_libraries(NiumaV3SettingsMaintenanceContractTest PRIVATE Qt5::Widgets Qt5::Sql Qt5::Concurrent)
 target_link_libraries(NiumaV3StyledMessageBoxContractTest PRIVATE Qt5::Widgets)
 target_link_libraries(NiumaV3NativeVisualCaptureContractTest PRIVATE Qt5::Widgets Qt5::Sql Qt5::Concurrent)
+foreach(font_target IN ITEMS NiumaV3LegacyBaseline NiumaV3ShellContractTest
+    NiumaV3HomeContractTest NiumaV3TaskListContractTest NiumaV3TaskDialogContractTest
+    NiumaV3PeriodicTaskContractTest NiumaV3ReferenceContractTest NiumaV3AchievementContractTest
+    NiumaV3StatsContractTest NiumaV3RecycleBinContractTest NiumaV3SettingsContractTest
+    NiumaV3SettingsMaintenanceContractTest NiumaV3NativeVisualCaptureContractTest)
+    target_link_libraries(${font_target} PRIVATE NiumaV3BundledFonts)
+endforeach()
 target_include_directories(NiumaV3StagingPathTest PRIVATE
     "${NIUMA_LEGACY_ROOT}"
     "${NIUMA_LEGACY_ROOT}/database"
@@ -508,6 +522,10 @@ add_test(NAME niuma_v3_native_visual_capture_dpi_200 COMMAND NiumaV3NativeVisual
 get_filename_component(NIUMA_BUILD_PROFILE "${CMAKE_BINARY_DIR}" NAME)
 set(NIUMA_TEST_DATA_ROOT "${CMAKE_SOURCE_DIR}/06_test/data/${NIUMA_BUILD_PROFILE}")
 set(NIUMA_TEST_EVIDENCE_ROOT "${CMAKE_SOURCE_DIR}/06_test/evidence/${NIUMA_BUILD_PROFILE}")
+set_tests_properties(niuma_v3_bundled_font_contract PROPERTIES
+    ENVIRONMENT "NIUMA_TEST_ROOT=${NIUMA_TEST_DATA_ROOT}/bundled-fonts")
+set_tests_properties(niuma_v3_bundled_font_isolated_contract PROPERTIES
+    ENVIRONMENT "NIUMA_TEST_ROOT=${NIUMA_TEST_DATA_ROOT}/bundled-fonts-isolated")
 if(WIN32)
     set_tests_properties(niuma_v3_instance_contract PROPERTIES
         ENVIRONMENT "NIUMA_TEST_ROOT=${NIUMA_TEST_DATA_ROOT}/instance")

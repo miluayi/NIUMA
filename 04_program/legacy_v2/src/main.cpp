@@ -14,11 +14,13 @@
 
 #include <QApplication>
 #include <QFileDialog>
+#include <QFont>
 #include <QIcon>
 #include <QMessageBox>
 #include <QTimer>
 
 #include "ui/MainWindow.h"
+#include "ui/BundledFonts.h"
 #include "src/AppVersion.h"
 #include "src/SingleInstance.h"
 #include "application/maintenance/StartupUseCase.h"
@@ -36,6 +38,21 @@ int main(int argc, char *argv[])
     if (!instance.valid()) return 1;
     if (instance.isSecondary()) {
         if (instance.activateExisting()) return 0;
+    }
+#endif
+    QString fontError;
+    if (!BundledFonts::load(&fontError)) {
+        QMessageBox::critical(nullptr,QStringLiteral("NIUMA"),fontError);
+        return 1;
+    }
+    QFont initialFont;
+    initialFont.setFamilies({QStringLiteral("Segoe UI"),QStringLiteral("Microsoft YaHei UI"),
+                            QStringLiteral("Microsoft YaHei"),QStringLiteral("Segoe UI Symbol")});
+    initialFont.setPixelSize(14);
+    initialFont.setStyleName(QStringLiteral("Regular"));
+    app.setFont(initialFont);
+#ifdef Q_OS_WIN
+    if (instance.isSecondary()) {
         QMessageBox::information(nullptr, QStringLiteral("NIUMA"),
             QStringLiteral("程序已在运行，但暂时无法切换窗口，请稍后重试。"));
         return 1;

@@ -13,6 +13,7 @@
 #include <QLabel>
 #include <QKeyEvent>
 #include <QFontDatabase>
+#include <QFile>
 #include <QLineEdit>
 #include <QMouseEvent>
 #include <QPushButton>
@@ -152,7 +153,8 @@ int main(int argc, char *argv[])
             != QStringLiteral("Segoe UI")
         || AppTheme::preferredFontFamily(QStringList{QStringLiteral("Microsoft YaHei")})
             != QStringLiteral("Microsoft YaHei")) return 6;
-    if (QDir(QStringLiteral(":/fonts")).exists()
+    if (!QFile::exists(QStringLiteral(":/fonts/segoeui.ttf"))
+        || app.property("niumaBundledFontIds").toList().size()!=6
         || app.font().family() != QStringLiteral("Segoe UI")) return 15;
     if (!newTaskShortcut || newTaskShortcut->key() != QKeySequence::New
         || !findTaskShortcut || findTaskShortcut->key() != QKeySequence::Find

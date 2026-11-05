@@ -102,9 +102,9 @@ static bool verifyPopupImage(QWidget *popup, const QString &directory, const QSt
             && client.right==qRound(popup->width()*scale) && client.bottom==qRound(popup->height()*scale);
 #endif
     }
-    if (!valid) fprintf(stderr,"Dropdown corner/shadow failed: %s surface=%d visible=%d type=%x size=%dx%d style=%s\n",
+    if (!valid) fprintf(stderr,"Dropdown corner/shadow failed: %s surface=%d visible=%d type=%x size=%dx%d position=%d,%d style=%s\n",
         qPrintable(name),popup->property("appUiPopupSurface").toBool(),popup->isVisible(),int(popup->windowType()),
-        popup->width(),popup->height(),qPrintable(popup->styleSheet()));
+        popup->width(),popup->height(),position.x(),position.y(),qPrintable(popup->styleSheet()));
     return valid;
 }
 
@@ -282,7 +282,8 @@ int main(int argc, char *argv[])
         fontReport << "resolved-run=" << run.rawFont().familyName() << '\n';
         if (run.glyphIndexes().contains(0)) return 62;
     }
-    if (QDir(QStringLiteral(":/fonts")).exists()
+    if (!QFile::exists(QStringLiteral(":/fonts/segoeui.ttf"))
+        || app.property("niumaBundledFontIds").toList().size()!=6
         || QFontInfo(app.font()).family() != QStringLiteral("Segoe UI")
         || (!QFontDatabase().families().contains(QStringLiteral("Microsoft YaHei UI"))
             && !QFontDatabase().families().contains(QStringLiteral("Microsoft YaHei")))
@@ -586,6 +587,7 @@ int main(int argc, char *argv[])
         QComboBox fixture;
         fixture.setObjectName("dropdownThemeFixture");
         fixture.resize(240,36);
+        fixture.move(window.screen()->availableGeometry().topLeft()+QPoint(80,100));
         fixture.setMaxVisibleItems(5);
         auto *style=QStyleFactory::create(theme);
         if (!style) return 189;

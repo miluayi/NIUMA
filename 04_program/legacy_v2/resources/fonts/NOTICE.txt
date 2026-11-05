@@ -1,0 +1,32 @@
+NIUMA bundled Microsoft fonts
+
+The project maintainer confirmed on 2026-11-05 that they hold application
+embedding and redistribution authorization for the Microsoft fonts used here.
+These files are supplied as application resources under that authorization.
+They are not open-source fonts and are not covered by any license for NIUMA's
+own source code. No independent font redistribution rights are granted by this
+notice. Original font names, outlines, metadata and copyright notices are intact.
+
+Segoe UI Regular / Semibold / Bold, version 5.72:
+Copyright (c) 2025 Microsoft Corporation. All Rights Reserved.
+Hebrew OpenType Layout logic copyright (c) 2003 & 2007, Ralph Hancock & John
+Hudson. This layout logic for Biblical Hebrew is open source software under the
+MIT License; see the font's embedded license description for details.
+
+Microsoft YaHei / Microsoft YaHei UI Regular / Bold, version 6.31:
+Copyright (c) 2024 Microsoft Corporation. All Rights Reserved.
+Portions copyright (c) 2024 Beijing Founder Electronics Co. Ltd. All Rights Reserved.
+
+Segoe UI Symbol, version 6.24:
+Copyright (c) 2022 Microsoft Corporation. All Rights Reserved.
+
+Unmodified source asset SHA-256:
+segoeui.ttf  704EADA12961A27FD271F7D3B09E2066520E758390C1776744EFF430FEE30F6E
+seguisb.ttf  6C3FD894B19950B10C34BF64069EF821EAF2F58F959146306FEE5B367472E501
+segoeuib.ttf B169E636719880976A97E94E3B1CB3DBE5F4A38EABC037BF9F2A9165154C3AD2
+msyh.ttc     D79C55E68B1131EEA0CC1C47BE4F572D964F28C682E143DB2AD09C1E4CB07A3F
+msyhbd.ttc   4508821B3DFFE01F0EF5E5326A3E60DF705A44633858811F67B6982DCE3F6EE6
+seguisym.ttf A4A35DCC62CD30E1A6C97B695ECEF83E59D2B149E3AF834F6A49F11851D56B37
+
+Runtime loading is private to the process via Qt's application-font API.
+The application does not install these fonts into Windows or alter its font registry.

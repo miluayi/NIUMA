@@ -1,4 +1,5 @@
 #include "AppTheme.h"
+#include "BundledFonts.h"
 
 #include <QApplication>
 #include <QCursor>
@@ -568,7 +569,7 @@ void applyWidgetTypography(QWidget *widget, int pixelSize, QFont::Weight weight,
         baseFont = widget->property("appUiBaseFont").value<QFont>();
     }
     QFont font = baseFont;
-    font.setFamilies({QStringLiteral("Segoe UI"), QStringLiteral("Microsoft YaHei UI"), QStringLiteral("Microsoft YaHei")});
+    font.setFamilies({QStringLiteral("Segoe UI"), QStringLiteral("Microsoft YaHei UI"), QStringLiteral("Microsoft YaHei"), QStringLiteral("Segoe UI Symbol")});
     const qreal scale = pixelSize / 14.0;
     if (font.pixelSize() > 0) font.setPixelSize(qMax(1, qRound(font.pixelSize() * scale)));
     else if (font.pointSizeF() > 0) font.setPointSizeF(qMax(1.0, font.pointSizeF() * scale));
@@ -695,10 +696,12 @@ QString AppTheme::preferredFontFamily(const QStringList &availableFamilies)
 
 void AppTheme::apply(QApplication &app, QWidget &window)
 {
+    QString fontError;
+    if (!BundledFonts::load(&fontError)) qFatal("%s",qPrintable(fontError));
     const QString fontFamily = preferredFontFamily(QFontDatabase().families());
     app.setProperty("appUiFontFallback", fontFamily != QStringLiteral("Segoe UI"));
     QFont::insertSubstitutions(QStringLiteral("Segoe UI"),
-        {QStringLiteral("Microsoft YaHei UI"), QStringLiteral("Microsoft YaHei")});
+        {QStringLiteral("Microsoft YaHei UI"), QStringLiteral("Microsoft YaHei"), QStringLiteral("Segoe UI Symbol")});
     QFont baseFont(fontFamily);
     baseFont.setPixelSize(14);
     baseFont.setStyleName(QStringLiteral("Regular"));
@@ -742,7 +745,7 @@ void AppTheme::applyTypography(QApplication &app, QWidget &window, int pixelSize
     app.setProperty("appUiFontWeight", weight);
     app.setProperty("appUiTypographyVersion", version);
     QFont appFont;
-    appFont.setFamilies({QStringLiteral("Segoe UI"), QStringLiteral("Microsoft YaHei UI"), QStringLiteral("Microsoft YaHei")});
+    appFont.setFamilies({QStringLiteral("Segoe UI"), QStringLiteral("Microsoft YaHei UI"), QStringLiteral("Microsoft YaHei"), QStringLiteral("Segoe UI Symbol")});
     appFont.setPixelSize(pixelSize);
     appFont.setWeight(selectedWeight(weight));
     appFont.setStyleName(selectedFontStyle(selectedWeight(weight)));

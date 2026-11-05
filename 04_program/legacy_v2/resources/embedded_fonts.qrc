@@ -1,0 +1,11 @@
+<RCC>
+    <qresource prefix="/fonts">
+        <file alias="NOTICE.txt">fonts/NOTICE.txt</file>
+        <file alias="segoeui.ttf" compress="9">fonts/segoeui.ttf</file>
+        <file alias="seguisb.ttf" compress="9">fonts/seguisb.ttf</file>
+        <file alias="segoeuib.ttf" compress="9">fonts/segoeuib.ttf</file>
+        <file alias="msyh.ttc" compress="9">fonts/msyh.ttc</file>
+        <file alias="msyhbd.ttc" compress="9">fonts/msyhbd.ttc</file>
+        <file alias="seguisym.ttf" compress="9">fonts/seguisym.ttf</file>
+    </qresource>
+</RCC>

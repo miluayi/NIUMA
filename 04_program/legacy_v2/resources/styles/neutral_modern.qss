@@ -9,7 +9,7 @@
    全局样式
    ---------------------------------------------------------------------------- */
 QWidget {
-    font-family: "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
+    font-family: "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", "Segoe UI Symbol", sans-serif;
     font-size: 15px;
     color: #0F172A;
     background-color: #F0F2F5;
