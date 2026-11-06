@@ -13,6 +13,7 @@
 
 #include "PeriodicTaskView.h"
 #include "widgets/RoundedCardBorder.h"
+#include "widgets/CategoryBadge.h"
 
 #include <QCheckBox>
 #include <QFont>
@@ -120,6 +121,7 @@ void PeriodicTaskView::setupUI()
     // QTableWidget
     table_ = new QTableWidget(cardFrame);
     table_->setObjectName("periodicTaskTable");
+    table_->setItemDelegateForColumn(ColCategory,new CategoryBadgeDelegate(table_));
     table_->setColumnCount(ColumnCount);
     table_->setHorizontalHeaderLabels(QStringList()
                                       << QStringLiteral("名称")

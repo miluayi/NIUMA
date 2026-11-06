@@ -76,6 +76,9 @@ inline bool verifyLabelSelection(QLabel *label)
     if (!label || !(label->textInteractionFlags() & Qt::TextSelectableByMouse)) {
         fprintf(stderr,"Label selection unavailable: label=%p flags=%d\n",static_cast<void *>(label),label ? int(label->textInteractionFlags()) : 0);return false;
     }
+    if (label->textInteractionFlags() & Qt::TextSelectableByKeyboard) {
+        fprintf(stderr,"Read-only label enables a keyboard caret: %s\n",qPrintable(label->objectName()));return false;
+    }
     const auto cursor=label->cursor().shape();
     const QRect geometry=label->geometry();
     const QPoint start(8, label->height()/2);

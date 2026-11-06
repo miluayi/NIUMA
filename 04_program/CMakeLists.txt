@@ -519,6 +519,8 @@ add_test(NAME niuma_v3_native_visual_capture_contract COMMAND NiumaV3NativeVisua
 add_test(NAME niuma_v3_native_visual_capture_dpi_125 COMMAND NiumaV3NativeVisualCaptureContractTest)
 add_test(NAME niuma_v3_native_visual_capture_dpi_150 COMMAND NiumaV3NativeVisualCaptureContractTest)
 add_test(NAME niuma_v3_native_visual_capture_dpi_200 COMMAND NiumaV3NativeVisualCaptureContractTest)
+set_tests_properties(niuma_v3_native_visual_capture_contract niuma_v3_native_visual_capture_dpi_125
+    niuma_v3_native_visual_capture_dpi_150 niuma_v3_native_visual_capture_dpi_200 PROPERTIES RUN_SERIAL TRUE)
 get_filename_component(NIUMA_BUILD_PROFILE "${CMAKE_BINARY_DIR}" NAME)
 set(NIUMA_TEST_DATA_ROOT "${CMAKE_SOURCE_DIR}/06_test/data/${NIUMA_BUILD_PROFILE}")
 set(NIUMA_TEST_EVIDENCE_ROOT "${CMAKE_SOURCE_DIR}/06_test/evidence/${NIUMA_BUILD_PROFILE}")

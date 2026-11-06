@@ -23,6 +23,7 @@
 #include "ui/Spacing.h"
 #include "ui/widgets/HeatmapWidget.h"
 #include "ui/widgets/TrendChart.h"
+#include "ui/widgets/CategoryBadge.h"
 
 // ============================================================================
 // 构造
@@ -418,8 +419,10 @@ void StatsView::loadCategoryDistribution(const QList<CategoryStat> &stats)
 
         // 标签行：分类名 + 数量
         QHBoxLayout *labelRow = new QHBoxLayout();
-        QLabel *nameLabel = new QLabel(s.category.isEmpty() ? QStringLiteral("\u672A\u5206\u7C7B") : s.category);
-        nameLabel->setStyleSheet("font-size:14px; color:#0F172A; border:none; background:transparent;");
+        const bool standardCategory=QStringList{QStringLiteral("催"),QStringLiteral("查"),QStringLiteral("报"),QStringLiteral("办")}.contains(s.category);
+        QLabel *nameLabel = standardCategory ? new CategoryBadgeLabel(s.category)
+            : new QLabel(s.category.isEmpty() ? QStringLiteral("\u672A\u5206\u7C7B") : s.category);
+        if (!standardCategory) nameLabel->setStyleSheet("font-size:14px; color:#0F172A; border:none; background:transparent;");
         labelRow->addWidget(nameLabel);
         labelRow->addStretch();
         QLabel *countLabel = new QLabel(QStringLiteral("%1 \u9879").arg(s.count));  // N 项
@@ -551,9 +554,7 @@ void StatsView::clearLayout(QLayout *layout)
 
 QString StatsView::categoryColorHex(const QString &category) const
 {
-    if (category == QStringLiteral("\u50AC")) return "#F59E0B";  // 催
-    if (category == QStringLiteral("\u67E5")) return "#2463EB";  // 查
-    if (category == QStringLiteral("\u62A5")) return "#60A5FA";  // 报
-    if (category == QStringLiteral("\u529E")) return "#8B5CF6";  // 办
+    if (QStringList{QStringLiteral("催"),QStringLiteral("查"),QStringLiteral("报"),QStringLiteral("办")}.contains(category))
+        return TaskItemDelegate::categoryBgColor(category).name();
     return "#2463EB";  // 默认
 }

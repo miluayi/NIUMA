@@ -150,7 +150,7 @@ int main(int argc, char *argv[])
     auto *detailCategory = detail.findChild<QLabel *>(QStringLiteral("appUiCategoryTag"));
     if (!detailCategory || detailCategory->text() != QStringLiteral("查")
         || detailCategory->size() != QSize(30, 24)
-        || !detailCategory->styleSheet().contains(QStringLiteral("border-radius: 6px"))) return 25;
+        || detailCategory->property("categoryText").toString()!=QStringLiteral("查")) return 25;
     for (const QString &section : sections) {
         if (!detail.findChild<QWidget *>(section)) return 17;
     }

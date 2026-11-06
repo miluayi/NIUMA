@@ -1,6 +1,9 @@
 #include <QApplication>
 #include "text_selection_contract.h"
 #include "detail_title_contract.h"
+#include "category_badge_contract.h"
+#include "widgets/CategoryBadge.h"
+#include <QTextEdit>
 #include "ReferenceDetailDialog.h"
 #include <QPlainTextEdit>
 #include "widgets/TaskItemDelegate.h"
@@ -38,6 +41,7 @@
 #include <QTableWidget>
 #include <QHelpEvent>
 #include <QToolTip>
+#include <QCursor>
 
 #include "DatabaseManager.h"
 #include "MainWindow.h"
@@ -169,10 +173,13 @@ static bool verifyOverflowTooltips(const QString &directory)
     table.setItem(0,1,new QTableWidgetItem(longText));
     table.setColumnWidth(0,180);
     table.setColumnWidth(1,180);
-    table.show(); QApplication::processEvents();
+    table.show(); table.raise(); table.activateWindow(); QApplication::processEvents();
     auto hover=[&](int column) {
         const QPoint pos=table.visualItemRect(table.item(0,column)).center();
-        QHelpEvent event(QEvent::ToolTip,pos,table.viewport()->mapToGlobal(pos));
+        const QPoint global=table.viewport()->mapToGlobal(pos);
+        QCursor::setPos(global);
+        QApplication::processEvents();
+        QHelpEvent event(QEvent::ToolTip,pos,global);
         QApplication::sendEvent(table.viewport(),&event);
     };
     hover(0);
@@ -220,7 +227,9 @@ static bool verifyOverflowTooltips(const QString &directory)
     label.setTextFormat(Qt::RichText);
     label.setText("<span>"+longText.toHtmlEscaped()+"</span>");
     label.setGeometry(0,0,180,40);
-    homeRow.show(); QApplication::processEvents();
+    homeRow.show();homeRow.raise();homeRow.activateWindow();QApplication::processEvents();
+    QCursor::setPos(label.mapToGlobal(QPoint(20,20)));
+    QApplication::processEvents();
     QHelpEvent event(QEvent::ToolTip,QPoint(20,20),label.mapToGlobal(QPoint(20,20)));
     QApplication::sendEvent(&label,&event);
     if (!QToolTip::text().contains(QString(45,QChar(0x725B)))) {fprintf(stderr,"Missing home tooltip: %s\n",qPrintable(QToolTip::text()));return false;}
@@ -336,6 +345,7 @@ int main(int argc, char *argv[])
 
     QApplication::setEffectEnabled(Qt::UI_AnimateCombo,true);
     MainWindow window;
+    if (!verifyCategoryCentering(captureDir,window.devicePixelRatioF())) return 201;
     window.resize(1440, 900);
     window.show();
     app.processEvents();
@@ -413,6 +423,10 @@ int main(int argc, char *argv[])
             }
             if (!verifyLabelSelection(homeTitle)) return 180;
         }
+        int badgeNumber=0;
+        for (auto *badge : workspace->currentWidget()->findChildren<QLabel *>("appUiCategoryTag"))
+            if (!verifyCategoryWidget(badge,badge->property("categoryText").toString(),
+                    QDir(captureDir).filePath(QString("page-%1-category-%2.png").arg(page).arg(++badgeNumber)))) return 202;
         for (const QWidget *widget : window.findChildren<QWidget *>()) {
             if (widget->isVisible() && QFontInfo(widget->font()).family() != QStringLiteral("Segoe UI")) {
                 fontReport << "page=" << page << " widget=" << widget->metaObject()->className()
@@ -663,6 +677,36 @@ int main(int argc, char *argv[])
         || QFontInfo(detailTitle->font()).family() != QStringLiteral("Segoe UI")
         || QFontInfo(detailTitle->font()).pixelSize() != 22) return 30;
     if (!verifyLabelSelection(const_cast<QLabel *>(detailTitle))) return 181;
+    auto *badge=dynamic_cast<CategoryBadgeLabel *>(detail.findChild<QLabel *>("appUiCategoryTag"));
+    if (!badge) return 202;
+    for (const QString &category : {QStringLiteral("催"),QStringLiteral("查"),QStringLiteral("报"),QStringLiteral("办")}) {
+        badge->setCategory(category);
+        if (!verifyCategoryWidget(badge,category,QDir(captureDir).filePath(QString("detail-category-%1.png").arg(category)))) return 202;
+    }
+    badge->setCategory(QStringLiteral("查"));
+    // A normal click must not leave a blinking insertion caret. Compare actual
+    // Qt pixels across a blink interval, while preserving the copy checks above.
+    auto *copyTitle=const_cast<QLabel *>(detailTitle);
+    const QPoint click(12,copyTitle->height()/2);
+    selectionMouse(copyTitle,QEvent::MouseButtonPress,click);
+    selectionMouse(copyTitle,QEvent::MouseButtonRelease,click);
+    app.processEvents();
+    const QImage beforeBlink=copyTitle->grab().toImage();
+    QElapsedTimer blink;
+    blink.start();
+    while(blink.elapsed()<qMax(100,QApplication::cursorFlashTime()/2+80)) {
+        app.processEvents();QThread::msleep(10);
+    }
+    if (beforeBlink!=copyTitle->grab().toImage()
+        || !detail.grab().save(QDir(captureDir).filePath("detail-click-no-caret.png"))) return 203;
+    for (auto *edit : detail.findChildren<QTextEdit *>()) {
+        if (!edit->isReadOnly() || edit->cursorWidth()!=0
+            || (edit->textInteractionFlags() & Qt::TextSelectableByKeyboard)) return 203;
+        const QString original=edit->toPlainText();
+        edit->setFocus();edit->selectAll();selectionCopy(edit);
+        if(QApplication::clipboard()->text()!=original || edit->toPlainText()!=original) return 203;
+        QTextCursor cursor=edit->textCursor();cursor.clearSelection();edit->setTextCursor(cursor);
+    }
     for (const QWidget *widget : detail.findChildren<QWidget *>()) {
         if (widget->isVisible() && QFontInfo(widget->font()).family() != QStringLiteral("Segoe UI")) {
             fontReport << "detail widget=" << widget->metaObject()->className()

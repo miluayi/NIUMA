@@ -31,29 +31,7 @@
 #include "ui/Spacing.h"
 #include "ui/widgets/PaginationWidget.h"
 #include "ui/widgets/TaskItemDelegate.h"
-
-namespace {
-class HomeCategoryBadge final : public QFrame {
-public:
-    explicit HomeCategoryBadge(const QString &category)
-        : category_(category)
-    {
-        setObjectName(QStringLiteral("appUiCategoryTag"));
-        setProperty("categoryText", category);
-        setFixedSize(TaskItemDelegate::categoryBadgeWidth(category), 24);
-    }
-
-protected:
-    void paintEvent(QPaintEvent *) override
-    {
-        QPainter painter(this);
-        TaskItemDelegate::paintCategoryBadge(&painter, rect(), category_);
-    }
-
-private:
-    QString category_;
-};
-}
+#include "ui/widgets/CategoryBadge.h"
 
 // ============================================================================
 // 构造
@@ -1031,7 +1009,7 @@ void HomeView::setStarButtonState(QPushButton *btn, bool focused) const
 
 QFrame* HomeView::createCategoryTag(const QString &category)
 {
-    return new HomeCategoryBadge(category);
+    return new CategoryBadgeLabel(category);
 }
 
 QLabel* HomeView::createTaskNameLabel(const Task &task, bool redIfOverdue)
@@ -1056,7 +1034,7 @@ QLabel* HomeView::createTaskNameLabel(const Task &task, bool redIfOverdue)
         ).arg(baseColor, task.title.toHtmlEscaped());
     }
     label->setText(html);
-    label->setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::TextSelectableByKeyboard);
+    label->setTextInteractionFlags(Qt::TextSelectableByMouse);
     return label;
 }
 

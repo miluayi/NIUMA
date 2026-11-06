@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
             != QStringLiteral("内部代号：铁军贰号")
         || !view.findChild<QLabel *>("settingsVersion")
         || view.findChild<QLabel *>("settingsVersion")->text()
-            != QStringLiteral("版本号：V3.2.0")) return 26;
+            != QStringLiteral("版本号：V3.2.1")) return 26;
     auto *about = view.findChild<QFrame *>("aboutCard");
     if (!about || !about->grab().save(QDir(root).filePath(QStringLiteral("settings-about-v3.png"))))
         return 27;

@@ -1,5 +1,6 @@
 #include <QApplication>
 #include "detail_title_contract.h"
+#include "category_badge_contract.h"
 #include <QComboBox>
 #include <QCheckBox>
 #include <QDialog>
@@ -106,6 +107,10 @@ int main(int argc, char *argv[])
         || table->item(0, 0)->textAlignment() != (Qt::AlignLeft | Qt::AlignVCenter)
         || table->item(0, 1)->textAlignment() != Qt::AlignCenter
         || !table->cellWidget(0, 5)) return 8;
+    const QRect categoryCell=table->visualItemRect(table->item(0,1));
+    const QImage categoryImage=table->viewport()->grab(categoryCell).toImage();
+    if(!verifyCategoryPixels(categoryImage,QRect(QPoint(),categoryCell.size()),table->item(0,1)->text())
+        || !categoryImage.save(QDir(root).filePath("periodic-category-standard.png"))) return 27;
     if (table->horizontalHeader()->sectionResizeMode(0) != QHeaderView::Stretch
         || table->horizontalHeader()->sectionResizeMode(6) != QHeaderView::ResizeToContents
         || table->columnWidth(6) >= table->columnWidth(0)) return 22;

@@ -16,6 +16,7 @@
 #include "TaskDetailView.h"
 #include "AppTheme.h"
 #include "widgets/DetailTitleLabel.h"
+#include "widgets/CategoryBadge.h"
 
 #include <QAbstractItemModel>
 #include <QDesktopServices>
@@ -461,7 +462,8 @@ QFrame* TaskDetailView::buildBasicInfoSection()
 
     for (const auto &f : fields) {
         QLabel *label = createInfoLabel(f.label);
-        *f.valuePtr = createInfoValue(QStringLiteral("-"));
+        *f.valuePtr = f.valuePtr==&categoryValue_ ? new CategoryBadgeLabel(QStringLiteral("-"),section)
+                                               : createInfoValue(QStringLiteral("-"));
         grid->addWidget(label, f.row * 2, f.col);
         grid->addWidget(*f.valuePtr, f.row * 2 + 1, f.col);
     }
@@ -784,19 +786,7 @@ void TaskDetailView::loadTaskData()
     taskNoValue_->setStyleSheet("font-family: Segoe UI; font-size: 14px; color: #0F172A; border: none;");
 
     // 分类标签（带颜色）
-    QString catBg;
-    if (task.category == QStringLiteral("\u50ac")) { catBg = "#C586C0"; }      // 催
-    else if (task.category == QStringLiteral("\u67e5")) { catBg = "#DCDCAA"; }  // 查
-    else if (task.category == QStringLiteral("\u62a5")) { catBg = "#569CD6"; }  // 报
-    else if (task.category == QStringLiteral("\u529e")) { catBg = "#6A9955"; }  // 办
-    else { catBg = "#F1F5F9"; }
-    categoryValue_->setText(task.category.isEmpty() ? QStringLiteral("-") : task.category);
-    categoryValue_->setStyleSheet(QString(
-        "QLabel { background: %1; color: %2; font-size: 14px; font-weight: 400; "
-        "border-radius: 6px; border: none; }").arg(catBg, QStringLiteral("#000000")));
-    categoryValue_->setAlignment(Qt::AlignCenter);
-    categoryValue_->setObjectName(QStringLiteral("appUiCategoryTag"));
-    categoryValue_->setFixedSize(30, 24);
+    static_cast<CategoryBadgeLabel *>(categoryValue_)->setCategory(task.category.isEmpty() ? QStringLiteral("-") : task.category);
 
     sourceValue_->setText(task.source.isEmpty() ? QStringLiteral("-") : task.source);
     tagValue_->setText(task.tag.isEmpty() ? QStringLiteral("-") : task.tag);

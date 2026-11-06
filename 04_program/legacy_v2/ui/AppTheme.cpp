@@ -40,6 +40,7 @@
 #include <QRegion>
 #include <QRegularExpression>
 #include <QTimer>
+#include <QTextEdit>
 #include <QScrollBar>
 #include <QEasingCurve>
 #include <QWheelEvent>
@@ -264,8 +265,10 @@ void styleControls(QWidget *root)
         if (!decoration) {
             if (!label->property("appUiCopyCursor").isValid())
                 label->setProperty("appUiCopyCursor",QVariant::fromValue(label->cursor()));
-            label->setTextInteractionFlags(label->textInteractionFlags()
-                | Qt::TextSelectableByMouse | Qt::TextSelectableByKeyboard);
+            auto flags=label->textInteractionFlags();
+            flags.setFlag(Qt::TextSelectableByMouse,true);
+            flags.setFlag(Qt::TextSelectableByKeyboard,false);
+            label->setTextInteractionFlags(flags);
             label->setFocusPolicy(Qt::ClickFocus);
             label->setCursor(label->property("appUiCopyCursor").value<QCursor>());
             QPalette palette=label->palette();
@@ -273,6 +276,15 @@ void styleControls(QWidget *root)
             palette.setColor(QPalette::HighlightedText,Qt::white);
             label->setPalette(palette);
         }
+    }
+    auto textEdits=root->findChildren<QTextEdit *>();
+    if (auto *edit=qobject_cast<QTextEdit *>(root)) textEdits.append(edit);
+    for (auto *edit:textEdits) {
+        if (!edit->isReadOnly()) continue;
+        auto flags=edit->textInteractionFlags();
+        flags.setFlag(Qt::TextSelectableByKeyboard,false);
+        edit->setTextInteractionFlags(flags);
+        edit->setCursorWidth(0);
     }
     auto views = root->findChildren<QAbstractItemView *>();
     if (auto *view = qobject_cast<QAbstractItemView *>(root)) views.append(view);

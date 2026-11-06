@@ -29,9 +29,12 @@ public:
     QSize sizeHint(const QStyleOptionViewItem &option,
                    const QModelIndex &index) const override;
     static int categoryBadgeWidth(const QString &category);
+    // Standard category colors: 催/查/报/办 = purple/yellow/blue/green.
+    static QColor categoryBgColor(const QString &category);
+    static CopyTextLayout categoryTextLayout(const QRect &rect,const QString &category,qreal scale=1);
     CopyTextLayout copyTextLayout(const QStyleOptionViewItem &,const QModelIndex &) const override;
     static void paintCategoryBadge(QPainter *painter, const QRect &rect,
-                                   const QString &category);
+                                   const QString &category,bool selected=false);
 
 private:
     void paintCategory(QPainter *painter, const QRect &rect, const QString &category) const;
@@ -42,16 +45,6 @@ private:
     static void paintPill(QPainter *painter, const QRect &rect, const QString &text,
                           const QColor &bgColor, const QColor &textColor);
 
-    /**
-     * @brief 返回分类对应的背景色
-     * 催: #FEF3C7 / 查: #EFF6FF / 报: #FED7AA / 办: #DCFCE7
-     */
-    static QColor categoryBgColor(const QString &category);
-    /**
-     * @brief 返回分类对应的文字色
-     * 催: #B45309 / 查: #1D4ED8 / 报: #C2410C / 办: #15803D
-     */
-    static QColor categoryTextColor(const QString &category);
     /**
      * @brief 返回状态对应的背景色
      * 进行中: #FDE68A / 已完成: #BBF7D0 / 他人办理: #E2E8F0 / 已删除: #FECACA

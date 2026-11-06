@@ -18,6 +18,7 @@ struct CopyTextLayout {
     bool wrap = false;
     int margin = 0;
     bool nativeAlignment = false;
+    bool fractionalOrigin = false;
     void prepare(QTextDocument &doc) const {
         doc.setDefaultFont(font);
         doc.setDocumentMargin(margin);
@@ -32,7 +33,7 @@ struct CopyTextLayout {
         if (alignment & Qt::AlignHCenter) x+=(rect.width()-size.width())/2;
         if (alignment & Qt::AlignRight) x+=rect.width()-size.width();
         if (alignment & Qt::AlignVCenter) y+=(rect.height()-size.height())/2;
-        return QPointF(qFloor(x),qFloor(y));
+        return fractionalOrigin ? QPointF(x,y) : QPointF(qFloor(x),qFloor(y));
     }
     int hit(QPointF point) const {
         QTextDocument doc;

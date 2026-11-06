@@ -3,7 +3,7 @@
  * @brief 任务表格自定义委托实现
  *
  * 绘制规范（coding.md 9.2）：
- *   - 分类列：催 #FEF3C7/#B45309、查 #EFF6FF/#1D4ED8、报 #FED7AA/#C2410C、办 #DCFCE7/#15803D
+ *   - 分类列：催 #C586C0、查 #DCDCAA、报 #569CD6、办 #6A9955，黑色文字
  *   - 状态列：进行中 #FDE68A/#92400E、已完成 #BBF7D0/#14532D、他人办理 #E2E8F0/#475569、已删除 #FECACA/#991B1B
  *   - 任务名称列：【重点】前缀 #FA423E + 任务名称
  *   - 截止列：daysLeft <= 3 → #DC2626 加粗；无效 → 灰色 "—"
@@ -17,6 +17,9 @@
 #include <QDate>
 #include <QFont>
 #include <QFontMetrics>
+#include <QFontMetricsF>
+#include <QHash>
+#include <QImage>
 #include <QPainter>
 #include <QStyle>
 #include <QStyleOptionViewItem>
@@ -25,6 +28,59 @@
 #include "models/Task.h"
 #include "models/TaskTableModel.h"
 #include "utils/DateUtil.h"
+
+namespace {
+QFont categoryFont() {
+    QFont font(QStringLiteral("Segoe UI"));
+    font.setPixelSize(14);
+    font.setWeight(QFont::Normal);
+    font.setStyleName(QStringLiteral("Normal"));
+    return font;
+}
+QRectF categoryRect(const QRect &cell,const QString &text) {
+    QRectF badge(0,0,TaskItemDelegate::categoryBadgeWidth(text),24);
+    badge.moveCenter(QRectF(cell).center());
+    return badge;
+}
+struct CategoryGlyph {
+    QImage normal;
+    QImage selected;
+    QRect ink;
+};
+const CategoryGlyph &categoryGlyph(const QString &text,qreal scale,const QColor &background) {
+    static QHash<QString,CategoryGlyph> cache;
+    const QString key=text+QLatin1Char('/')+QString::number(scale,'f',4)+background.name();
+    auto found=cache.constFind(key);
+    if(found!=cache.cend()) return found.value();
+    CategoryGlyph glyph;
+    const QFont font=categoryFont();
+    glyph.normal=QImage(qCeil((QFontMetricsF(font).horizontalAdvance(text)+32)*scale),qCeil(64*scale),QImage::Format_ARGB32_Premultiplied);
+    glyph.normal.setDevicePixelRatio(scale);
+    glyph.normal.fill(Qt::transparent);
+    {QPainter painter(&glyph.normal);painter.setFont(font);painter.setPen(Qt::black);
+        painter.setRenderHint(QPainter::TextAntialiasing);painter.drawText(QPointF(16,32),text);}
+    // Measure the rasterized ink once per glyph/DPI. Fractional scaling can
+    // make font-metric bounds differ from the pixels Qt actually paints.
+    QImage preview(glyph.normal.size(),QImage::Format_ARGB32_Premultiplied);
+    preview.setDevicePixelRatio(scale);
+    preview.fill(background);
+    {QPainter painter(&preview);painter.drawImage(QPointF(),glyph.normal);}
+    for(int y=0;y<preview.height();++y) for(int x=0;x<preview.width();++x) {
+        const QColor color=preview.pixelColor(x,y);
+        if(color.red()<70 && color.green()<70 && color.blue()<70)
+            glyph.ink=glyph.ink.united(QRect(x,y,1,1));
+    }
+    glyph.selected=glyph.normal;
+    {QPainter painter(&glyph.selected);painter.setCompositionMode(QPainter::CompositionMode_SourceIn);painter.fillRect(glyph.selected.rect(),Qt::white);}
+    return cache.insert(key,glyph).value();
+}
+QPointF categoryGlyphOrigin(const QRect &cell,const QString &text,qreal scale,const QColor &background) {
+    const QRect ink=categoryGlyph(text,scale,background).ink;
+    const QPointF center=categoryRect(cell,text).center()*scale;
+    return QPointF(qRound(center.x()-ink.x()-ink.width()/2.0)/scale,
+                   qRound(center.y()-ink.y()-ink.height()/2.0)/scale);
+}
+}
 
 // ============================================================================
 // 构造
@@ -42,6 +98,8 @@ CopyTextLayout TaskItemDelegate::copyTextLayout(const QStyleOptionViewItem &opti
     font.setWeight(QFont::Normal);
     font.setStyleName(QStringLiteral("Normal"));
     QString text=index.data().toString();
+    if(index.column()==TaskTableModel::ColCategory)
+        return categoryTextLayout(option.rect,text,option.widget ? option.widget->devicePixelRatioF() : 1);
     QRect rect=option.rect;
     Qt::Alignment alignment=Qt::AlignCenter;
     if (index.column()==TaskTableModel::ColTitle) {
@@ -50,7 +108,7 @@ CopyTextLayout TaskItemDelegate::copyTextLayout(const QStyleOptionViewItem &opti
         rect.adjust(14,0,-14,0);
         alignment=Qt::AlignLeft|Qt::AlignVCenter;
     }
-    if(index.column()==TaskTableModel::ColCategory || index.column()==TaskTableModel::ColStatus) {
+    if(index.column()==TaskTableModel::ColStatus) {
         const int width=qMax(28,QFontMetrics(font).horizontalAdvance(text)+16);
         rect=QRect(rect.center().x()-width/2,rect.center().y()-12,width,24);
     }
@@ -176,19 +234,41 @@ void TaskItemDelegate::paintCategory(QPainter *painter, const QRect &rect,
 
 int TaskItemDelegate::categoryBadgeWidth(const QString &category)
 {
-    QFont font(QStringLiteral("Segoe UI"));
-    font.setPixelSize(14);
-    font.setWeight(QFont::Normal);
-    font.setStyleName(QStringLiteral("Normal"));
-    return qMax(28, QFontMetrics(font).horizontalAdvance(category) + 16);
+    return qMax(28, QFontMetrics(categoryFont()).horizontalAdvance(category) + 16);
+}
+
+CopyTextLayout TaskItemDelegate::categoryTextLayout(const QRect &rect,const QString &category,qreal scale)
+{
+    const QFont font=categoryFont();
+    if(category.isEmpty()) return {category,font,rect,Qt::AlignCenter,false,0};
+    QTextDocument document;
+    document.setDefaultFont(font);
+    document.setDocumentMargin(0);
+    document.setPlainText(category);
+    const QSizeF size=document.size();
+    const qreal ascent=document.firstBlock().layout()->lineAt(0).ascent();
+    return {category,font,QRectF(categoryGlyphOrigin(rect,category,scale,categoryBgColor(category))+QPointF(16,32-ascent),size),
+        Qt::AlignLeft|Qt::AlignTop,false,0,false,true};
 }
 
 void TaskItemDelegate::paintCategoryBadge(QPainter *painter, const QRect &rect,
-                                          const QString &category)
+                                          const QString &category,bool selected)
 {
     if (category.isEmpty()) return;
-    paintPill(painter, rect, category, categoryBgColor(category),
-              categoryTextColor(category));
+    painter->save();
+    painter->setRenderHints(QPainter::Antialiasing|QPainter::TextAntialiasing);
+    painter->setFont(categoryFont());
+    painter->setPen(Qt::NoPen);
+    painter->setBrush(categoryBgColor(category));
+    painter->drawRoundedRect(categoryRect(rect,category),6,6);
+    const qreal scale=painter->device()->devicePixelRatioF();
+    const QColor background=categoryBgColor(category);
+    const auto &glyph=categoryGlyph(category,scale,background);
+    const QPointF origin=categoryGlyphOrigin(rect,category,scale,background);
+    if (selected) painter->fillRect(QRectF(glyph.ink.x()/scale,glyph.ink.y()/scale,
+        glyph.ink.width()/scale,glyph.ink.height()/scale).translated(origin).adjusted(-1,-1,1,1),QColor("#2463EB"));
+    painter->drawImage(origin,selected ? glyph.selected : glyph.normal);
+    painter->restore();
 }
 
 // ============================================================================
@@ -368,12 +448,6 @@ QColor TaskItemDelegate::categoryBgColor(const QString &category)
         return QColor("#6A9955");
     }
     return QColor("#EFF6FF");  // 默认蓝调
-}
-
-QColor TaskItemDelegate::categoryTextColor(const QString &category)
-{
-    Q_UNUSED(category);
-    return QColor("#000000");
 }
 
 QColor TaskItemDelegate::statusBgColor(const QString &status) const
