@@ -9,9 +9,9 @@
  *  - 全部 SQL 使用参数化查询（QSqlQuery::prepare + addBindValue），禁止字符串拼接
  *  - DAO 无状态，db_ 为构造时传入的连接，不持有业务状态
  *  - 逻辑删除（setEnabled 设置 is_enabled=0），历史任务保留原记录
- *  - 物理删除（deleteById）前需调用 isUsed 检查是否被 task/reference_material 引用
- *  - task.tag 与 reference_material.tag 存储 name（TEXT），非外键 id
- *  - isUsed 通过 name 匹配 task.tag 和 reference_material.tag
+ *  - TagScope 选择任务/周期模板/资料的独立字典，默认是任务，表名只取自封闭映射
+ *  - 记录的 tag 字段存储 name（TEXT），非外键 id；各体系可拥有同名标签
+ *  - isUsed 和最近使用排序只查询当前体系，不跨体系关联
  */
 #pragma once
 
@@ -24,7 +24,7 @@
 
 class TagDictDao {
 public:
-    explicit TagDictDao(QSqlDatabase db);
+    explicit TagDictDao(QSqlDatabase db, TagScope scope=TagScope::Task);
 
     // 查询全部（按 id 正序）
     QList<TagDict> findAll();
@@ -51,11 +51,14 @@ public:
     // 物理删除（调用前需确认 isUsed 返回 false）
     bool deleteById(int id);
 
-    // 检查是否被 task 或 reference_material 表引用（按 name 匹配）
+    // 检查是否被当前体系引用（按 name 匹配）
     bool isUsed(int id);
 
 private:
     QSqlDatabase db_;
+    TagScope scope_;
+    QString tableName_;
+    QString recordTable_;
 
     // 辅助：从 QSqlQuery 读取一行构造 TagDict
     TagDict tagFromQuery(QSqlQuery &query);

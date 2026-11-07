@@ -24,9 +24,15 @@
 // 构造
 // ============================================================================
 
-TagDictDao::TagDictDao(QSqlDatabase db)
-    : db_(db)
+TagDictDao::TagDictDao(QSqlDatabase db, TagScope scope)
+    : db_(db),scope_(scope)
 {
+    // Identifiers come only from this closed mapping, never from user text.
+    switch(scope) {
+    case TagScope::Periodic: tableName_="periodic_tag_dict";recordTable_="periodic_task";break;
+    case TagScope::Reference: tableName_="reference_tag_dict";recordTable_="reference_material";break;
+    default: tableName_="tag_dict";recordTable_="task";break;
+    }
 }
 
 // ============================================================================
@@ -37,8 +43,8 @@ QList<TagDict> TagDictDao::findAll()
 {
     QList<TagDict> result;
     QSqlQuery query(db_);
-    query.prepare("SELECT id, name, is_enabled, sort_order, create_time "
-                  "FROM tag_dict ORDER BY id ASC");
+    query.prepare(QStringLiteral("SELECT id, name, is_enabled, sort_order, create_time "
+                  "FROM %1 ORDER BY id ASC").arg(tableName_));
     if (!query.exec()) {
         Logger::instance().error(QStringLiteral("TagDictDao::findAll 失败: %1").arg(query.lastError().text()));
         return result;
@@ -53,8 +59,8 @@ QList<TagDict> TagDictDao::findEnabled()
 {
     QList<TagDict> result;
     QSqlQuery query(db_);
-    query.prepare("SELECT id, name, is_enabled, sort_order, create_time "
-                  "FROM tag_dict WHERE is_enabled = 1 ORDER BY sort_order ASC, id ASC");
+    query.prepare(QStringLiteral("SELECT id, name, is_enabled, sort_order, create_time "
+                  "FROM %1 WHERE is_enabled = 1 ORDER BY sort_order ASC, id ASC").arg(tableName_));
     if (!query.exec()) {
         Logger::instance().error(QStringLiteral("TagDictDao::findEnabled 失败: %1").arg(query.lastError().text()));
         return result;
@@ -69,18 +75,15 @@ QList<TagDict> TagDictDao::findEnabledByRecentUse()
 {
     QList<TagDict> result;
     QSqlQuery query(db_);
-    query.prepare(
+    query.prepare(QStringLiteral(
         "SELECT d.id, d.name, d.is_enabled, d.sort_order, d.create_time "
-        "FROM tag_dict d LEFT JOIN ("
-        "  SELECT tag, MAX(used_at) AS last_used FROM ("
-        "    SELECT tag, COALESCE(update_time, create_time) AS used_at FROM task WHERE tag IS NOT NULL AND tag <> '' "
-        "    UNION ALL SELECT tag, create_time FROM periodic_task WHERE tag IS NOT NULL AND tag <> '' "
-        "    UNION ALL SELECT tag, COALESCE(update_time, create_time) FROM reference_material WHERE tag IS NOT NULL AND tag <> ''"
-        "  ) GROUP BY tag"
+        "FROM %1 d LEFT JOIN ("
+        "  SELECT tag, MAX(%3) AS last_used FROM %2 WHERE tag IS NOT NULL AND tag <> '' GROUP BY tag"
         ") recent ON recent.tag = d.name "
         "WHERE d.is_enabled = 1 "
         "ORDER BY CASE WHEN recent.last_used IS NULL THEN 1 ELSE 0 END, "
-        "recent.last_used DESC, d.sort_order ASC, d.id ASC");
+        "recent.last_used DESC, d.sort_order ASC, d.id ASC").arg(tableName_,recordTable_,
+            scope_==TagScope::Periodic ? QStringLiteral("create_time") : QStringLiteral("COALESCE(update_time, create_time)")));
     if (!query.exec()) {
         Logger::instance().error(QStringLiteral("TagDictDao::findEnabledByRecentUse 失败: %1")
                                      .arg(query.lastError().text()));
@@ -97,8 +100,8 @@ QList<TagDict> TagDictDao::findEnabledByRecentUse()
 std::optional<TagDict> TagDictDao::findById(int id)
 {
     QSqlQuery query(db_);
-    query.prepare("SELECT id, name, is_enabled, sort_order, create_time "
-                  "FROM tag_dict WHERE id = ?");
+    query.prepare(QStringLiteral("SELECT id, name, is_enabled, sort_order, create_time "
+                  "FROM %1 WHERE id = ?").arg(tableName_));
     query.addBindValue(id);
     if (!query.exec()) {
         Logger::instance().error(QStringLiteral("TagDictDao::findById 失败: %1").arg(query.lastError().text()));
@@ -113,8 +116,8 @@ std::optional<TagDict> TagDictDao::findById(int id)
 std::optional<TagDict> TagDictDao::findByName(const QString &name)
 {
     QSqlQuery query(db_);
-    query.prepare("SELECT id, name, is_enabled, sort_order, create_time "
-                  "FROM tag_dict WHERE name = ?");
+    query.prepare(QStringLiteral("SELECT id, name, is_enabled, sort_order, create_time "
+                  "FROM %1 WHERE name = ?").arg(tableName_));
     query.addBindValue(name);
     if (!query.exec()) {
         Logger::instance().error(QStringLiteral("TagDictDao::findByName 失败: %1").arg(query.lastError().text()));
@@ -135,8 +138,8 @@ int TagDictDao::insert(const TagDict &tag)
     QString now = DateUtil::currentDateTimeStr();
 
     QSqlQuery query(db_);
-    query.prepare("INSERT INTO tag_dict (name, is_enabled, sort_order, create_time) "
-                  "VALUES (?, ?, ?, ?)");
+    query.prepare(QStringLiteral("INSERT INTO %1 (name, is_enabled, sort_order, create_time) "
+                  "VALUES (?, ?, ?, ?)").arg(tableName_));
     query.addBindValue(tag.name);
     query.addBindValue(tag.isEnabled ? 1 : 0);
     query.addBindValue(tag.sortOrder);
@@ -156,7 +159,7 @@ int TagDictDao::insert(const TagDict &tag)
 bool TagDictDao::update(const TagDict &tag)
 {
     QSqlQuery query(db_);
-    query.prepare("UPDATE tag_dict SET name = ?, sort_order = ? WHERE id = ?");
+    query.prepare(QStringLiteral("UPDATE %1 SET name = ?, sort_order = ? WHERE id = ?").arg(tableName_));
     query.addBindValue(tag.name);
     query.addBindValue(tag.sortOrder);
     query.addBindValue(tag.id);
@@ -171,7 +174,7 @@ bool TagDictDao::update(const TagDict &tag)
 bool TagDictDao::setEnabled(int id, bool enabled)
 {
     QSqlQuery query(db_);
-    query.prepare("UPDATE tag_dict SET is_enabled = ? WHERE id = ?");
+    query.prepare(QStringLiteral("UPDATE %1 SET is_enabled = ? WHERE id = ?").arg(tableName_));
     query.addBindValue(enabled ? 1 : 0);
     query.addBindValue(id);
     if (!query.exec()) {
@@ -184,7 +187,7 @@ bool TagDictDao::setEnabled(int id, bool enabled)
 bool TagDictDao::deleteById(int id)
 {
     QSqlQuery query(db_);
-    query.prepare("DELETE FROM tag_dict WHERE id = ?");
+    query.prepare(QStringLiteral("DELETE FROM %1 WHERE id = ?").arg(tableName_));
     query.addBindValue(id);
     if (!query.exec()) {
         Logger::instance().error(QStringLiteral("TagDictDao::deleteById 失败: %1").arg(query.lastError().text()));
@@ -206,27 +209,15 @@ bool TagDictDao::isUsed(int id)
     }
     QString name = opt->name;
 
-    // 检查 task 表
+    // Only records in this dictionary's domain can keep a tag in use.
     QSqlQuery taskQuery(db_);
-    taskQuery.prepare("SELECT 1 FROM task WHERE tag = ? LIMIT 1");
+    taskQuery.prepare(QStringLiteral("SELECT 1 FROM %1 WHERE tag = ? LIMIT 1").arg(recordTable_));
     taskQuery.addBindValue(name);
     if (!taskQuery.exec()) {
         Logger::instance().error(QStringLiteral("TagDictDao::isUsed 查询 task 失败: %1").arg(taskQuery.lastError().text()));
         return true;  // 查询失败时保守返回 true（不允许删除）
     }
     if (taskQuery.next()) {
-        return true;
-    }
-
-    // 检查 reference_material 表
-    QSqlQuery refQuery(db_);
-    refQuery.prepare("SELECT 1 FROM reference_material WHERE tag = ? LIMIT 1");
-    refQuery.addBindValue(name);
-    if (!refQuery.exec()) {
-        Logger::instance().error(QStringLiteral("TagDictDao::isUsed 查询 reference_material 失败: %1").arg(refQuery.lastError().text()));
-        return true;
-    }
-    if (refQuery.next()) {
         return true;
     }
 

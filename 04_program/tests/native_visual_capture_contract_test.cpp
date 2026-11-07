@@ -48,6 +48,7 @@
 #include "AppTheme.h"
 #include "PathUtil.h"
 #include "SettingsView.h"
+#include "application/settings/SettingsUseCase.h"
 #include "TaskDetailView.h"
 #include "TaskCreateDialog.h"
 #include "ReferenceCreateDialog.h"
@@ -345,6 +346,9 @@ int main(int argc, char *argv[])
 
     QApplication::setEffectEnabled(Qt::UI_AnimateCombo,true);
     MainWindow window;
+    SettingsUseCase().addTag(QStringLiteral("任务专属示例"),TagScope::Task);
+    SettingsUseCase().addTag(QStringLiteral("周期专属示例"),TagScope::Periodic);
+    SettingsUseCase().addTag(QStringLiteral("资料专属示例"),TagScope::Reference);
     if (!verifyCategoryCentering(captureDir,window.devicePixelRatioF())) return 201;
     window.resize(1440, 900);
     window.show();
@@ -412,6 +416,15 @@ int main(int argc, char *argv[])
         sidebar->setCurrentRow(sidebarRow);
         app.processEvents();
         if (workspace->currentIndex() != page) return 4 + page;
+        if(page==7) {
+            auto *scope=window.findChild<QComboBox *>("settingsTagScopeCombo");
+            if(!scope || scope->count()!=3) return 204;
+            for(int index=0;index<3;++index) {
+                scope->setCurrentIndex(index);app.processEvents();
+                if(!scope->parentWidget()->grab().save(QDir(captureDir).filePath(QString("settings-tag-scope-%1.png").arg(index)))) return 204;
+            }
+            scope->setCurrentIndex(0);app.processEvents();
+        }
         if (page == 0) {
             auto *homeTitle = window.findChild<QLabel *>(QStringLiteral("HomeTaskName"));
             if (!homeTitle) {

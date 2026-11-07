@@ -9,6 +9,8 @@
 #include <QString>
 #include <QDateTime>
 
+enum class TagScope { Task, Periodic, Reference };
+
 struct TagDict {
     int id = 0;
     QString name;

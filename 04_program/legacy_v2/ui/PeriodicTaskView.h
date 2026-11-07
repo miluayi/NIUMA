@@ -60,6 +60,7 @@ private:
         ColCategory,         // 分类
         ColPeriod,           // 周期
         ColSource,           // 来源
+        ColTag,              // 标签
         ColReminderTime,     // 提醒时间
         ColEnabled,          // 启用
         ColActions,          // 操作

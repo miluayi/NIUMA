@@ -93,6 +93,11 @@ bool DatabaseManager::initialize(const QString &dbPath) {
 
     // 8. 预置初始数据（幂等）
     seedInitialData();
+    if (!migrateTagDictionaries()) {
+        Logger::instance().error(QStringLiteral("独立标签字典迁移失败，停止初始化"));
+        close();
+        return false;
+    }
 
     // 9. 完整性检查
     QString integrityError;
@@ -295,6 +300,30 @@ void DatabaseManager::createTableTagDict() {
     if (!ok) {
         Logger::instance().error(QStringLiteral("建表 tag_dict 失败: %1").arg(query.lastError().text()));
     }
+}
+
+bool DatabaseManager::migrateTagDictionaries() {
+    const QStringList tables=db_.tables();
+    if(tables.contains("periodic_tag_dict") && tables.contains("reference_tag_dict")) return true;
+    if(!db_.transaction()) return false;
+    const auto fail=[this]() { db_.rollback();return false; };
+    for (const auto &domain : {qMakePair(QString("periodic_tag_dict"),QString("periodic_task")),
+                               qMakePair(QString("reference_tag_dict"),QString("reference_material"))}) {
+        if(tables.contains(domain.first)) continue;
+        QSqlQuery query(db_);
+        if(!query.exec(QStringLiteral("CREATE TABLE %1 (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE, "
+            "is_enabled INTEGER NOT NULL DEFAULT 1, sort_order INTEGER NOT NULL DEFAULT 0, create_time TEXT NOT NULL)").arg(domain.first)))
+            return fail();
+        // One-time copies preserve names, disabled entries, IDs and ordering.
+        // Existing domain tables are never repopulated on restart or reset.
+        if(!query.exec(QStringLiteral("INSERT INTO %1 SELECT id,name,is_enabled,sort_order,create_time FROM tag_dict").arg(domain.first)))
+            return fail();
+        if(!query.exec(QStringLiteral("INSERT OR IGNORE INTO %1 (name,is_enabled,sort_order,create_time) "
+            "SELECT DISTINCT tag,1,9999,datetime('now','localtime') FROM %2 WHERE tag IS NOT NULL AND trim(tag)<>''")
+            .arg(domain.first,domain.second))) return fail();
+    }
+    if(!db_.commit()) return fail();
+    return true;
 }
 
 void DatabaseManager::createTableHandlerDict() {

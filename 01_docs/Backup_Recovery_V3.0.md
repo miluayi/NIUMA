@@ -1,6 +1,6 @@
 # NIUMA V3.0 备份、迁移与恢复
 
-更新：2026-09-25。当前实现入口为 `../04_program/legacy_v2/service/BackupService.cpp`、`ScanMatchService.cpp` 和 `application/maintenance/StartupUseCase.cpp`。
+更新：2026-11-08。当前实现入口为 `../04_program/legacy_v2/service/BackupService.cpp`、`ScanMatchService.cpp` 和 `application/maintenance/StartupUseCase.cpp`。
 
 ## 1. 备份类型
 
@@ -13,6 +13,8 @@
 | 未配置工作目录 | `database_only` | 只有数据库、配置和清单 |
 
 自动备份和程序目录中的 `NIUMA_auto.niuma` 用于日常保护；手动备份可选择简易或全量。交付产品 ZIP 不等于 `.niuma` 数据备份。
+
+V3.2.2 的数据库包含任务、周期任务和参考资料三套独立标签字典，两种备份均随完整数据库保留这些字典。恢复旧版共享标签数据库后，初始化时执行一次性拆分：保留原名称、顺序、停用状态及记录中的标签文字，补入周期模板与资料实际使用的标签。两张新字典表在同一事务内建立，失败回滚并停止初始化；已拆分的数据库重启或恢复后不再从任务标签重新复制。恢复出厂设置会清空三套字典。
 
 ## 2. 恢复已有备份
 

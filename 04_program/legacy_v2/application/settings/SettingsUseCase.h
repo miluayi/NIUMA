@@ -18,13 +18,13 @@ struct UiFontPreferences {
 class SettingsUseCase {
 public:
     QList<SourceDict> sources() const;
-    QList<TagDict> tags() const;
+    QList<TagDict> tags(TagScope scope=TagScope::Task) const;
     QList<Handler> handlers() const;
     int addSource(const QString &name) const;
-    int addTag(const QString &name) const;
+    int addTag(const QString &name,TagScope scope=TagScope::Task) const;
     int addHandler(const QString &name) const;
     bool deleteSource(int id) const;
-    bool deleteTag(int id) const;
+    bool deleteTag(int id,TagScope scope=TagScope::Task) const;
     bool deleteHandler(int id) const;
 
     ExportConfig exportConfig() const;

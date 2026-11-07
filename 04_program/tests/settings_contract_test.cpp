@@ -1,4 +1,5 @@
 #include <QApplication>
+#include "database/TagDictDao.h"
 #include <QCheckBox>
 #include <QComboBox>
 #include <QDir>
@@ -94,7 +95,7 @@ int main(int argc, char *argv[])
             != QStringLiteral("内部代号：铁军贰号")
         || !view.findChild<QLabel *>("settingsVersion")
         || view.findChild<QLabel *>("settingsVersion")->text()
-            != QStringLiteral("版本号：V3.2.1")) return 26;
+            != QStringLiteral("版本号：V3.2.2")) return 26;
     auto *about = view.findChild<QFrame *>("aboutCard");
     if (!about || !about->grab().save(QDir(root).filePath(QStringLiteral("settings-about-v3.png"))))
         return 27;
@@ -131,6 +132,26 @@ int main(int argc, char *argv[])
     if (dictionaryId("source_dict", QStringLiteral("S11 来源")) >= 0
         || dictionaryId("tag_dict", QStringLiteral("S11 标签")) >= 0
         || dictionaryId("handler_dict", QStringLiteral("S11 办理人")) >= 0) return 9;
+    auto *scopeCombo=view.findChild<QComboBox *>("settingsTagScopeCombo");
+    if(!scopeCombo || scopeCombo->count()!=3) return 30;
+    for(int index=0;index<3;++index) {
+        tagInput->setText(QStringLiteral("未提交草稿"));
+        if(index!=scopeCombo->currentIndex()) {
+            scopeCombo->setCurrentIndex(index);
+            if(!tagInput->text().isEmpty()) return 31;
+        }
+        tagInput->setText(QStringLiteral("三个体系同名"));addTag->click();
+        if(!TagDictDao(DatabaseManager::instance().database(),static_cast<TagScope>(index)).findByName(QStringLiteral("三个体系同名"))) return 32;
+        if(!scopeCombo->parentWidget()->grab().save(QDir(root).filePath(QString("settings-tags-%1.png").arg(index)))) return 33;
+    }
+    scopeCombo->setCurrentIndex(0);
+    const auto taskShared=TagDictDao(DatabaseManager::instance().database()).findByName(QStringLiteral("三个体系同名"));
+    auto *deleteTaskTag=view.findChild<QPushButton *>(QString("settingsDeleteTag_%1").arg(taskShared->id));
+    if(!deleteTaskTag) return 34;
+    deleteTaskTag->click();
+    if(TagDictDao(DatabaseManager::instance().database()).findByName(QStringLiteral("三个体系同名"))
+        || !TagDictDao(DatabaseManager::instance().database(),TagScope::Periodic).findByName(QStringLiteral("三个体系同名"))
+        || !TagDictDao(DatabaseManager::instance().database(),TagScope::Reference).findByName(QStringLiteral("三个体系同名"))) return 35;
 
     auto *reportTitle = view.findChild<QLineEdit *>("settingsReportTitle");
     auto *achievements = view.findChild<QCheckBox *>("settingsIncludeAchievements");

@@ -102,4 +102,5 @@ private:
     void seedHandlerDict();
     void seedPeriodicTaskTemplates();
     void seedDefaultSettings();
+    bool migrateTagDictionaries();
 };

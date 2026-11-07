@@ -26,6 +26,7 @@
 #include <QWidget>
 
 #include "models/ExportConfig.h"
+#include "models/TagDict.h"
 
 class QLabel;
 class QLineEdit;
@@ -99,6 +100,7 @@ private:
     QLineEdit *sourceInput_;
     QListWidget *tagList_;
     QLineEdit *tagInput_;
+    QComboBox *tagScopeCombo_;
     QListWidget *handlerList_;
     QLineEdit *handlerInput_;
 
@@ -117,7 +119,8 @@ private:
     void onAddSource();
     void onDeleteSource(int dictId);
     void onAddTag();
-    void onDeleteTag(int dictId);
+    void onDeleteTag(int dictId,TagScope scope);
+    TagScope currentTagScope() const;
     void onAddHandler();
     void onDeleteHandler(int dictId);
 

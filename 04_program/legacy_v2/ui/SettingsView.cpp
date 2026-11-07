@@ -162,6 +162,7 @@ SettingsView::SettingsView(QWidget *parent)
     , sourceInput_(nullptr)
     , tagList_(nullptr)
     , tagInput_(nullptr)
+    , tagScopeCombo_(nullptr)
     , handlerList_(nullptr)
     , handlerInput_(nullptr)
 {
@@ -306,6 +307,7 @@ QFrame* SettingsView::buildDictManagementCard()
     sourceLayout->setSpacing(Spacing::SM);
 
     QLabel *sourceTitle = new QLabel(QStringLiteral("来源管理"), sourceCol);
+    sourceTitle->setFixedHeight(36);
     sourceTitle->setStyleSheet("font-size:15px; font-weight:600; color:#0F172A; border:none;");
     sourceLayout->addWidget(sourceTitle);
 
@@ -346,7 +348,17 @@ QFrame* SettingsView::buildDictManagementCard()
 
     QLabel *tagTitle = new QLabel(QStringLiteral("标签管理"), tagCol);
     tagTitle->setStyleSheet("font-size:15px; font-weight:600; color:#0F172A; border:none;");
-    tagLayout->addWidget(tagTitle);
+    auto *tagHeader=new QHBoxLayout;
+    tagHeader->addWidget(tagTitle);
+    tagScopeCombo_=new QComboBox(tagCol);
+    tagScopeCombo_->setObjectName("settingsTagScopeCombo");
+    tagScopeCombo_->setStyleSheet(kComboQss);
+    tagScopeCombo_->addItem(QStringLiteral("任务标签"));
+    tagScopeCombo_->addItem(QStringLiteral("周期任务标签"));
+    tagScopeCombo_->addItem(QStringLiteral("参考资料标签"));
+    tagScopeCombo_->setFixedHeight(36);
+    tagHeader->addWidget(tagScopeCombo_,1);
+    tagLayout->addLayout(tagHeader);
 
     tagList_ = new QListWidget(tagCol);
     tagList_->setObjectName("settingsTagList");
@@ -363,7 +375,7 @@ QFrame* SettingsView::buildDictManagementCard()
     tagInputRow->setSpacing(Spacing::SM);
     tagInput_ = new QLineEdit(tagCol);
     tagInput_->setObjectName("settingsTagInput");
-    tagInput_->setPlaceholderText(QStringLiteral("输入标签名称"));
+    tagInput_->setPlaceholderText(QStringLiteral("输入任务标签"));
     tagInput_->setStyleSheet(kLineEditQss);
     QPushButton *addTagBtn = new QPushButton(QStringLiteral("添加标签"), tagCol);
     addTagBtn->setObjectName("settingsAddTag");
@@ -375,6 +387,11 @@ QFrame* SettingsView::buildDictManagementCard()
     tagLayout->addLayout(tagInputRow);
 
     connect(addTagBtn, &QPushButton::clicked, this, &SettingsView::onAddTag);
+    connect(tagScopeCombo_,QOverload<int>::of(&QComboBox::currentIndexChanged),this,[this] {
+        tagInput_->clear();
+        tagInput_->setPlaceholderText(QStringLiteral("输入%1").arg(tagScopeCombo_->currentText()));
+        loadTagList();
+    });
 
     // ---- 办理人管理列 ----
     QFrame *handlerCol = new QFrame(card);
@@ -384,6 +401,7 @@ QFrame* SettingsView::buildDictManagementCard()
     handlerLayout->setSpacing(Spacing::SM);
 
     QLabel *handlerTitle = new QLabel(QStringLiteral("办理人管理"), handlerCol);
+    handlerTitle->setFixedHeight(36);
     handlerTitle->setStyleSheet("font-size:15px; font-weight:600; color:#0F172A; border:none;");
     handlerLayout->addWidget(handlerTitle);
 
@@ -779,7 +797,8 @@ void SettingsView::loadSourceList()
 void SettingsView::loadTagList()
 {
     tagList_->clear();
-    for (const TagDict &tag : SettingsUseCase().tags()) {
+    const TagScope scope=currentTagScope();
+    for (const TagDict &tag : SettingsUseCase().tags(scope)) {
         const int id = tag.id;
         const QString &name = tag.name;
 
@@ -796,13 +815,15 @@ void SettingsView::loadTagList()
         rowLayout->addWidget(nameLbl, 1);
 
         QPushButton *delBtn = new QPushButton(QStringLiteral("删除"), row);
-        delBtn->setObjectName(QStringLiteral("settingsDeleteTag_%1").arg(id));
+        const QString prefix=scope==TagScope::Task ? QStringLiteral("settingsDeleteTag_")
+            : scope==TagScope::Periodic ? QStringLiteral("settingsDeletePeriodicTag_") : QStringLiteral("settingsDeleteReferenceTag_");
+        delBtn->setObjectName(prefix+QString::number(id));
         delBtn->setCursor(Qt::PointingHandCursor);
         delBtn->setFocusPolicy(Qt::NoFocus);
         delBtn->setStyleSheet(kSecondaryBtnQss);
         rowLayout->addWidget(delBtn);
 
-        connect(delBtn, &QPushButton::clicked, this, [this, id]() { onDeleteTag(id); });
+        connect(delBtn, &QPushButton::clicked, this, [this, id,scope]() { onDeleteTag(id,scope); });
 
         item->setSizeHint(row->sizeHint());
         tagList_->setItemWidget(item, row);
@@ -840,7 +861,7 @@ void SettingsView::onAddTag()
     if (name.isEmpty()) {
         return;
     }
-    if (SettingsUseCase().addTag(name) <= 0) {
+    if (SettingsUseCase().addTag(name,currentTagScope()) <= 0) {
         Logger::instance().error(QStringLiteral("SettingsView: 添加标签失败: %1").arg(name));
         return;
     }
@@ -849,9 +870,13 @@ void SettingsView::onAddTag()
     Logger::instance().info(QStringLiteral("SettingsView: 已添加标签: %1").arg(name));
 }
 
-void SettingsView::onDeleteTag(int dictId)
+TagScope SettingsView::currentTagScope() const {
+    return static_cast<TagScope>(tagScopeCombo_->currentIndex());
+}
+
+void SettingsView::onDeleteTag(int dictId,TagScope scope)
 {
-    if (!SettingsUseCase().deleteTag(dictId)) {
+    if (!SettingsUseCase().deleteTag(dictId,scope)) {
         Logger::instance().error(QStringLiteral("SettingsView: 删除标签失败: %1").arg(dictId));
         return;
     }

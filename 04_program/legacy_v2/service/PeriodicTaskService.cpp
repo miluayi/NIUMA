@@ -16,8 +16,19 @@
 #include "DatabaseManager.h"
 #include "PeriodicTaskDao.h"
 #include "TaskService.h"
+#include "database/TagDictDao.h"
 
 #include "utils/Logger.h"
+
+namespace {
+void rememberPeriodicTag(const QString &name) {
+    if(name.trimmed().isEmpty()) return;
+    TagDictDao dao(DatabaseManager::instance().database(),TagScope::Periodic);
+    if(dao.findByName(name.trimmed())) return;
+    TagDict entry;entry.name=name.trimmed();entry.sortOrder=9999;
+    dao.insert(entry);
+}
+}
 
 // ============================================================================
 // 模板到任务的转换
@@ -185,6 +196,7 @@ TaskResult PeriodicTaskService::createTemplate(const PeriodicTask &tmpl)
     if (newId <= 0) {
         return {false, QStringLiteral("创建周期任务模板失败"), 0};
     }
+    rememberPeriodicTag(tmpl.tag);
     Logger::instance().info(
         QStringLiteral("PeriodicTaskService::createTemplate 成功: id=%1 name=%2").arg(newId).arg(tmpl.name));
     return {true, QString(), newId};
@@ -196,6 +208,7 @@ TaskResult PeriodicTaskService::updateTemplate(const PeriodicTask &tmpl)
     if (!dao.update(tmpl)) {
         return {false, QStringLiteral("更新周期任务模板失败"), 0};
     }
+    rememberPeriodicTag(tmpl.tag);
     Logger::instance().info(
         QStringLiteral("PeriodicTaskService::updateTemplate 成功: id=%1").arg(tmpl.id));
     return {true, QString(), tmpl.id};

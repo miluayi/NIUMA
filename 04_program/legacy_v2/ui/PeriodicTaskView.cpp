@@ -128,6 +128,7 @@ void PeriodicTaskView::setupUI()
                                       << QStringLiteral("分类")
                                       << QStringLiteral("周期")
                                       << QStringLiteral("来源")
+                                      << QStringLiteral("标签")
                                       << QStringLiteral("提醒时间")
                                       << QStringLiteral("启用")
                                       << QStringLiteral("操作"));
@@ -206,6 +207,7 @@ void PeriodicTaskView::setColumnWidths()
     table_->setColumnWidth(ColCategory, 70);
     table_->setColumnWidth(ColPeriod, 110);
     table_->setColumnWidth(ColSource, 140);
+    table_->setColumnWidth(ColTag, 140);
     table_->setColumnWidth(ColReminderTime, 100);
     table_->setColumnWidth(ColEnabled, 80);
     // 操作列自适应
@@ -292,6 +294,9 @@ void PeriodicTaskView::fillTable()
         QTableWidgetItem *sourceItem = new QTableWidgetItem(t.source);
         sourceItem->setTextAlignment(Qt::AlignCenter);
         table_->setItem(i, ColSource, sourceItem);
+        auto *tagItem=new QTableWidgetItem(t.tag);
+        tagItem->setTextAlignment(Qt::AlignCenter);
+        table_->setItem(i,ColTag,tagItem);
 
         // 提醒时间
         QTableWidgetItem *reminderItem = new QTableWidgetItem(

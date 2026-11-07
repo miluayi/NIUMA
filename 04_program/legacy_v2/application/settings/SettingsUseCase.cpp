@@ -60,9 +60,9 @@ QList<SourceDict> SettingsUseCase::sources() const
     return entries;
 }
 
-QList<TagDict> SettingsUseCase::tags() const
+QList<TagDict> SettingsUseCase::tags(TagScope scope) const
 {
-    auto entries = TagDictDao(DatabaseManager::instance().database()).findAll();
+    auto entries = TagDictDao(DatabaseManager::instance().database(),scope).findAll();
     sortByName(entries);
     return entries;
 }
@@ -84,9 +84,9 @@ int SettingsUseCase::addSource(const QString &name) const
     return insertNext(dao, dao.findAll(), name);
 }
 
-int SettingsUseCase::addTag(const QString &name) const
+int SettingsUseCase::addTag(const QString &name,TagScope scope) const
 {
-    TagDictDao dao(DatabaseManager::instance().database());
+    TagDictDao dao(DatabaseManager::instance().database(),scope);
     return insertNext(dao, dao.findAll(), name);
 }
 
@@ -101,9 +101,9 @@ bool SettingsUseCase::deleteSource(int id) const
     return SourceDictDao(DatabaseManager::instance().database()).deleteById(id);
 }
 
-bool SettingsUseCase::deleteTag(int id) const
+bool SettingsUseCase::deleteTag(int id,TagScope scope) const
 {
-    return TagDictDao(DatabaseManager::instance().database()).deleteById(id);
+    return TagDictDao(DatabaseManager::instance().database(),scope).deleteById(id);
 }
 
 bool SettingsUseCase::deleteHandler(int id) const
@@ -170,7 +170,8 @@ void SettingsUseCase::resetAllData() const
     const QStringList tables = {
         QStringLiteral("task"), QStringLiteral("task_remark"), QStringLiteral("reference_material"),
         QStringLiteral("achievement"), QStringLiteral("operation_log"), QStringLiteral("periodic_task"),
-        QStringLiteral("source_dict"), QStringLiteral("tag_dict"), QStringLiteral("handler_dict")
+        QStringLiteral("source_dict"), QStringLiteral("tag_dict"), QStringLiteral("handler_dict"),
+        QStringLiteral("periodic_tag_dict"), QStringLiteral("reference_tag_dict")
     };
     for (const QString &table : tables) {
         query.exec(QStringLiteral("DELETE FROM %1").arg(table));

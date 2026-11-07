@@ -78,6 +78,7 @@ int main(int argc, char *argv[])
     auto *table = view.findChild<QTableWidget *>(QStringLiteral("periodicTaskTable"));
     auto *empty = view.findChild<QLabel *>(QStringLiteral("periodicTaskEmptyState"));
     if (!table || table->rowCount() != 0 || !empty || !empty->isVisible()) return 4;
+    if(table->columnCount()!=8 || table->horizontalHeaderItem(4)->text()!=QStringLiteral("标签")) return 28;
 
     PeriodicTaskCreateDialog createDialog;
     createDialog.show();
@@ -106,18 +107,18 @@ int main(int argc, char *argv[])
     if (table->rowCount() != 1 || !table->isVisible() || empty->isVisible()
         || table->item(0, 0)->textAlignment() != (Qt::AlignLeft | Qt::AlignVCenter)
         || table->item(0, 1)->textAlignment() != Qt::AlignCenter
-        || !table->cellWidget(0, 5)) return 8;
+        || !table->cellWidget(0, 6) || table->item(0,4)->text()!=QStringLiteral("S06 标签")) return 8;
     const QRect categoryCell=table->visualItemRect(table->item(0,1));
     const QImage categoryImage=table->viewport()->grab(categoryCell).toImage();
     if(!verifyCategoryPixels(categoryImage,QRect(QPoint(),categoryCell.size()),table->item(0,1)->text())
         || !categoryImage.save(QDir(root).filePath("periodic-category-standard.png"))) return 27;
     if (table->horizontalHeader()->sectionResizeMode(0) != QHeaderView::Stretch
-        || table->horizontalHeader()->sectionResizeMode(6) != QHeaderView::ResizeToContents
-        || table->columnWidth(6) >= table->columnWidth(0)) return 22;
-    const auto actions = table->cellWidget(0, 6)->findChildren<QPushButton *>();
+        || table->horizontalHeader()->sectionResizeMode(7) != QHeaderView::ResizeToContents
+        || table->columnWidth(7) >= table->columnWidth(0)) return 22;
+    const auto actions = table->cellWidget(0, 7)->findChildren<QPushButton *>();
     if (actions.size() != 2) return 24;
-    const int sectionLeft = table->horizontalHeader()->sectionViewportPosition(6);
-    const int sectionRight = sectionLeft + table->columnWidth(6) - 1;
+    const int sectionLeft = table->horizontalHeader()->sectionViewportPosition(7);
+    const int sectionRight = sectionLeft + table->columnWidth(7) - 1;
     const int buttonLeft = actions.at(0)->mapTo(table->viewport(), QPoint(0, 0)).x();
     const int buttonRight = actions.at(1)->mapTo(table->viewport(),
                                                  QPoint(actions.at(1)->width() - 1, 0)).x();
@@ -130,6 +131,9 @@ int main(int argc, char *argv[])
     if (!editName || !editSave || editSave->key() != QKeySequence::Save
         || editName->toPlainText() != QStringLiteral("S06 表格模板")) return 9;
     editName->setPlainText(QString(45,QChar(0x725B)));
+    auto *editTag=editDialog.findChild<QComboBox *>("periodicTagCombo");
+    if(!editTag) return 29;
+    editTag->setCurrentText(QStringLiteral("周期新标签"));
     editDialog.show(); app.processEvents();
     if (!verifyThreeLineNameEdit(editName)
         || !editDialog.grab().save(QDir(root).filePath("periodic-name-45.png"))) return 25;
@@ -137,6 +141,8 @@ int main(int argc, char *argv[])
     QApplication::sendEvent(editName,&saveName);
     if (!periodicService.getById(visualTemplate.taskId)
         || periodicService.getById(visualTemplate.taskId)->name!=QString(45,QChar(0x725B))) return 26;
+    view.refresh();app.processEvents();
+    if(table->item(0,4)->text()!=QStringLiteral("周期新标签")) return 30;
 
     if (!periodicService.setEnabled(visualTemplate.taskId, false).ok
         || periodicService.getById(visualTemplate.taskId)->isEnabled) return 10;

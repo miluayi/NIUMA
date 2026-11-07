@@ -21,7 +21,7 @@ PeriodicTaskFormOptions PeriodicTaskUseCase::loadFormOptions() const
 {
     const QSqlDatabase database = DatabaseManager::instance().database();
     return {names(SourceDictDao(database).findEnabledByRecentUse()),
-            names(TagDictDao(database).findEnabledByRecentUse())};
+            names(TagDictDao(database,TagScope::Periodic).findEnabledByRecentUse())};
 }
 TaskResult PeriodicTaskUseCase::create(const PeriodicTask &task) const { return PeriodicTaskService().createTemplate(task); }
 TaskResult PeriodicTaskUseCase::update(const PeriodicTask &task) const { return PeriodicTaskService().updateTemplate(task); }

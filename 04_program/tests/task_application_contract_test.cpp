@@ -124,13 +124,17 @@ int verifyCompletedQueryContract()
 }
 }
 
+#include "tag_isolation_contract.h"
+
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
     const QString root = qEnvironmentVariable("NIUMA_TEST_ROOT");
     if (root.isEmpty()) return 1;
     qputenv("NIUMA_DATA_DIR", QDir(root).filePath("Data").toUtf8());
+    if (!QDir().mkpath(root) || !verifyTagMigration(QDir(root).filePath("legacy-tags.db"))) return 201;
     if (!QDir().mkpath(root) || !DatabaseManager::instance().initialize(PathUtil::databasePath())) return 2;
+    if (!verifyTagDomainIsolation()) return 200;
     const QString workRoot = QDir(root).filePath(QStringLiteral("work-root"));
     if (QDir(workRoot).exists() && !QDir(workRoot).removeRecursively()) return 33;
     if (!FileService().setWorkDir(QString())) return 34;

@@ -23,4 +23,4 @@ ReferenceListData ReferenceQueryUseCase::loadList(const ReferenceFilter &filter)
 }
 std::optional<ReferenceMaterial> ReferenceQueryUseCase::find(int id) const { return ReferenceMaterialDao(DatabaseManager::instance().database()).findById(id); }
 QStringList ReferenceQueryUseCase::formSources() const { return names(SourceDictDao(DatabaseManager::instance().database()).findEnabledByRecentUse()); }
-QStringList ReferenceQueryUseCase::formTags() const { return names(TagDictDao(DatabaseManager::instance().database()).findEnabledByRecentUse()); }
+QStringList ReferenceQueryUseCase::formTags() const { return names(TagDictDao(DatabaseManager::instance().database(),TagScope::Reference).findEnabledByRecentUse()); }
