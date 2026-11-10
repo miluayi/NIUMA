@@ -6,7 +6,7 @@
  *   QVBoxLayout
  *   ├── page-header（标题"年度成果" + 副标题 + 年份选择 QComboBox + "导出总结"按钮）
  *   ├── stats-card（4 项统计：成果总数 / 累计金额 / 重点成果 / 成果率）
- *   ├── 表格区（QFrame#Card 包裹 QTableView，7 列）
+ *   ├── 表格区（QFrame#Card 包裹 QTableView，含操作列）
  *   └── 分页（PaginationWidget，50 条/页）
  *
  * 信号：
@@ -80,6 +80,7 @@ private:
         ColResultAmount,   // 成果金额
         ColCreateTime,     // 完成时间
         ColTag,            // 标记
+        ColActions,        // 操作
         ColumnCount
     };
 
@@ -90,6 +91,7 @@ private:
     void loadYearOptions();
     void loadData();
     void fillTablePage();
+    void setRowActions(int row, const AchievementListItem &item);
     void updateStats(int totalCount, qint64 totalAmount, int keyCount, int completedCount);
     void setColumnWidths();
 };

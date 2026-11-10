@@ -2,9 +2,12 @@
 #include <QCheckBox>
 #include <QDir>
 #include <QFile>
+#include <QFrame>
 #include <QKeyEvent>
 #include <QLabel>
 #include <QLineEdit>
+#include <QPushButton>
+#include <QScrollArea>
 #include <QSqlQuery>
 #include <QTableView>
 #include <QTextEdit>
@@ -13,6 +16,7 @@
 
 #include "AchievementDialog.h"
 #include "AchievementView.h"
+#include "AppTheme.h"
 #include "application/achievement/AchievementUseCase.h"
 #include "DatabaseManager.h"
 #include "SettingsDao.h"
@@ -24,6 +28,7 @@
 #include "service/TaskService.h"
 #include "utils/PathUtil.h"
 #include "utils/WordExport.h"
+#include "widgets/StyledMessageBox.h"
 
 namespace {
 
@@ -51,6 +56,63 @@ void saveTriggeredAchievement()
         dialog->findChild<QCheckBox *>(QStringLiteral("achievementAnnualCheck"))->setChecked(true);
         QMetaObject::invokeMethod(dialog, "onSaveClicked", Qt::DirectConnection);
     });
+}
+
+bool editAchievement(QPushButton *button, const Achievement &expected,
+                     const QString &newContent, const QString &newAmount,
+                     const QString &capturePath)
+{
+    bool verified = false;
+    QObject timerContext;
+    QTimer::singleShot(0, &timerContext, [&]() {
+        auto *dialog = qobject_cast<AchievementDialog *>(QApplication::activeModalWidget());
+        if (!dialog) return;
+        auto *content = dialog->findChild<QLineEdit *>("achievementWorkContentEdit");
+        auto *object = dialog->findChild<QLineEdit *>("achievementWorkObjectEdit");
+        auto *count = dialog->findChild<QLineEdit *>("achievementResultCountEdit");
+        auto *amount = dialog->findChild<QLineEdit *>("achievementResultAmountEdit");
+        auto *description = dialog->findChild<QTextEdit *>("achievementDescriptionEdit");
+        auto *annual = dialog->findChild<QCheckBox *>("achievementAnnualCheck");
+        auto *key = dialog->findChild<QCheckBox *>("achievementKeyCheck");
+        auto *save = dialog->findChild<QPushButton *>("btnPrimary");
+        if (!content || !object || !count || !amount || !description || !annual || !key || !save
+            || content->text() != expected.workContent || object->text() != expected.workObject
+            || count->text().toInt() != expected.resultCount
+            || amount->text() != QString::number(expected.amountInYuan(), 'f', 2)
+            || description->toPlainText() != expected.description
+            || annual->isChecked() != expected.isAnnual || key->isChecked() != expected.isKeyAchievement
+            || save->text() != QStringLiteral("保存") || !dialog->grab().save(capturePath)) {
+            dialog->reject();
+            return;
+        }
+        content->setText(newContent);
+        amount->setText(newAmount);
+        verified = true;
+        save->click();
+    });
+    button->click();
+    return verified;
+}
+
+bool answerDelete(QPushButton *button, bool confirm)
+{
+    bool answered = false;
+    QObject timerContext;
+    QTimer::singleShot(0, &timerContext, [&]() {
+        auto *dialog = qobject_cast<StyledMessageBox *>(QApplication::activeModalWidget());
+        if (!dialog) return;
+        const QString text = confirm ? QStringLiteral("确认删除") : QStringLiteral("取消");
+        for (auto *choice : dialog->findChildren<QPushButton *>()) {
+            if (choice->text() == text) {
+                answered = true;
+                choice->click();
+                return;
+            }
+        }
+        dialog->reject();
+    });
+    button->click();
+    return answered;
 }
 
 } // namespace
@@ -91,6 +153,8 @@ int main(int argc, char *argv[])
         || !saveShortcut || saveShortcut->key() != QKeySequence::Save
         || description->height() != 72) return 7;
     content->setText(QStringLiteral("S08 成果内容"));
+    dialog.findChild<QLineEdit *>("achievementWorkObjectEdit")->setText(QStringLiteral("S08 办理对象"));
+    description->setPlainText(QStringLiteral("第一行说明\n第二行说明"));
     amount->setText(QStringLiteral("12.34"));
     dialog.findChild<QLineEdit *>(QStringLiteral("achievementResultCountEdit"))->setText(QStringLiteral("3"));
     annual->setChecked(true);
@@ -115,6 +179,8 @@ int main(int argc, char *argv[])
         || triggeredAchievement->resultAmount != 950 || !triggeredAchievement->isAnnual) return 13;
 
     AchievementView view;
+    AppTheme::apply(app, view);
+    view.resize(1200, 700);
     view.show();
     view.refresh();
     app.processEvents();
@@ -142,6 +208,80 @@ int main(int argc, char *argv[])
     WordExport::ExportResult failed = AchievementUseCase().exportAnnualReport(
         QDate::currentDate().year(), QDir(root).filePath("missing-parent/S08-summary.doc"));
     if (failed.success) return 18;
+
+    TaskDetailView recorded(directTask.taskId);
+    recorded.show();
+    auto *section = recorded.findChild<QFrame *>("achievementSection");
+    auto *scroll = recorded.findChild<QScrollArea *>("detailScroll");
+    auto *modify = recorded.findChild<QPushButton *>("addAchievementBtn");
+    auto *remove = recorded.findChild<QPushButton *>("deleteAchievementBtn");
+    auto *headerEdit = recorded.findChild<QPushButton *>("headerEditBtn");
+    auto *headerDelete = recorded.findChild<QPushButton *>("headerDeleteBtn");
+    if (!section || !scroll || !modify || !remove || !headerEdit || !headerDelete) return 30;
+    scroll->ensureWidgetVisible(section);
+    app.processEvents();
+    if (!modify->isVisible() || !remove->isVisible() || modify->text() != QStringLiteral("修改成果")
+        || modify->y() != remove->y() || modify->geometry().right() >= remove->x()
+        || modify->height() != headerEdit->height() || remove->height() != headerDelete->height()
+        || modify->font().pixelSize() != headerEdit->font().pixelSize()
+        || remove->styleSheet() != headerDelete->styleSheet()
+        || !section->grab().save(QDir(root).filePath("achievement-detail-actions.png"))) return 31;
+    const QString detailContent = QStringLiteral("详情修改成果");
+    if (!editAchievement(modify, *directAchievement, detailContent, QStringLiteral("22.50"),
+                         QDir(root).filePath("achievement-edit-detail.png"))) return 32;
+    const auto detailEdited = achievementDao.findByTaskId(directTask.taskId);
+    if (!detailEdited || detailEdited->id != directAchievement->id
+        || detailEdited->createTime != directAchievement->createTime
+        || detailEdited->workContent != detailContent || detailEdited->resultAmount != 2250) return 33;
+    recorded.close();
+
+    view.refresh();
+    app.processEvents();
+    auto *model = table->model();
+    if (model->columnCount() != 8 || model->headerData(7, Qt::Horizontal).toString() != QStringLiteral("操作")
+        || total->text() != QStringLiteral("2") || amountStat->text() != QStringLiteral("¥32.00")) return 34;
+    const auto rowAction = [table, model](const QString &text, const char *name) -> QPushButton * {
+        for (int row = 0; row < model->rowCount(); ++row) {
+            if (model->index(row, 1).data().toString() != text) continue;
+            auto *actions = table->indexWidget(model->index(row, 7));
+            return actions ? actions->findChild<QPushButton *>(name) : nullptr;
+        }
+        return nullptr;
+    };
+    auto *rowEdit = rowAction(detailContent, "achievementRowEdit");
+    const QString annualContent = QStringLiteral("年度页面编辑成果");
+    if (!rowEdit || !rowEdit->isVisible()
+        || !view.grab().save(QDir(root).filePath("achievement-annual-actions.png"))
+        || !editAchievement(rowEdit, *detailEdited, annualContent, QStringLiteral("30.05"),
+                            QDir(root).filePath("achievement-edit-annual.png"))) return 35;
+    const auto annualEdited = achievementDao.findByTaskId(directTask.taskId);
+    if (!annualEdited || annualEdited->id != directAchievement->id
+        || annualEdited->createTime != directAchievement->createTime || annualEdited->resultAmount != 3005
+        || annualEdited->workContent != annualContent || amountStat->text() != QStringLiteral("¥39.55")) return 36;
+
+    auto *rowDelete = rowAction(annualContent, "achievementRowDelete");
+    if (!rowDelete || !answerDelete(rowDelete, false) || !achievementDao.findByTaskId(directTask.taskId)
+        || !answerDelete(rowDelete, true) || achievementDao.findByTaskId(directTask.taskId)
+        || table->model()->rowCount() != 1 || amountStat->text() != QStringLiteral("¥9.50")
+        || keyStat->text() != QStringLiteral("0")) return 37;
+    const auto unchangedTask = taskService.getTaskById(directTask.taskId);
+    if (!unchangedTask || !unchangedTask->isCompleted()) return 38;
+
+    TaskDetailView otherDetail(triggerTask.taskId);
+    otherDetail.show();
+    auto *otherRemove = otherDetail.findChild<QPushButton *>("deleteAchievementBtn");
+    auto *supplement = otherDetail.findChild<QPushButton *>("addAchievementBtn");
+    auto *otherSection = otherDetail.findChild<QFrame *>("achievementSection");
+    if (!otherRemove || !supplement || !otherSection || !answerDelete(otherRemove, true)
+        || achievementDao.findByTaskId(triggerTask.taskId)) return 39;
+    app.processEvents();
+    if (otherRemove->isVisible() || !supplement->isVisible() || supplement->text() != QStringLiteral("补录成果")
+        || supplement->height() != headerEdit->height()
+        || !otherSection->grab().save(QDir(root).filePath("achievement-detail-supplement.png"))) return 40;
+    saveTriggeredAchievement();
+    supplement->click();
+    if (!achievementDao.findByTaskId(triggerTask.taskId)
+        || supplement->text() != QStringLiteral("修改成果") || !otherRemove->isVisible()) return 41;
 
     DatabaseManager::instance().close();
     return 0;

@@ -35,6 +35,7 @@
 #include <QVariant>
 
 #include "ColorPalette.h"
+#include "AchievementDialog.h"
 #include "Radius.h"
 #include "Spacing.h"
 #include "application/achievement/AchievementUseCase.h"
@@ -397,7 +398,8 @@ void AchievementView::setupTable(QVBoxLayout *mainLayout)
                                       << QStringLiteral("\u6210\u679C\u6570\u91CF")  // 成果数量
                                       << QStringLiteral("\u6210\u679C\u91D1\u989D")  // 成果金额
                                       << QStringLiteral("\u5B8C\u6210\u65F6\u95F4")  // 完成时间
-                                      << QStringLiteral("\u6807\u8BB0"));           // 标记
+                                      << QStringLiteral("\u6807\u8BB0")            // 标记
+                                      << QStringLiteral("操作"));
     tableView_->setModel(model_);
 
     // 标记列使用自定义委托
@@ -406,6 +408,7 @@ void AchievementView::setupTable(QVBoxLayout *mainLayout)
     // 表头设置
     QHeaderView *header = tableView_->horizontalHeader();
     header->setSectionResizeMode(QHeaderView::Interactive);
+    header->setSectionResizeMode(ColActions, QHeaderView::Fixed);
     header->setStretchLastSection(false);
     header->setMinimumSectionSize(60);
     header->setHighlightSections(false);
@@ -439,7 +442,7 @@ void AchievementView::setColumnWidths()
     tableView_->setColumnWidth(ColResultCount, 90);    // 成果数量
     tableView_->setColumnWidth(ColResultAmount, 110);  // 成果金额
     tableView_->setColumnWidth(ColCreateTime, 110);    // 完成时间
-    // 标记列由 stretchLastSection 填充
+    tableView_->setColumnWidth(ColActions, 128);     // 操作
 }
 
 // ============================================================================
@@ -485,6 +488,7 @@ void AchievementView::loadData()
     // 更新分页
     pagination_->setTotal(stats.total);
     pagination_->setPage(currentPage_);
+    currentPage_ = pagination_->currentPage();
     pagination_->updateDisplay();
 
     // 填充表格（当前页）
@@ -576,8 +580,47 @@ void AchievementView::fillTablePage()
         tagItem->setData(tags, Qt::UserRole);
         row.append(tagItem);
 
+        auto *actionsItem = new QStandardItem;
+        actionsItem->setEditable(false);
+        row.append(actionsItem);
         model_->appendRow(row);
+        setRowActions(model_->rowCount() - 1, item);
     }
+}
+
+void AchievementView::setRowActions(int row, const AchievementListItem &item)
+{
+    auto *actions = new QWidget(tableView_);
+    auto *layout = new QHBoxLayout(actions);
+    layout->setContentsMargins(6, 0, 6, 0);
+    layout->setSpacing(Spacing::SM);
+    auto *edit = new QPushButton(QStringLiteral("编辑"), actions);
+    auto *remove = new QPushButton(QStringLiteral("删除"), actions);
+    edit->setObjectName("achievementRowEdit");
+    remove->setObjectName("achievementRowDelete");
+    const QString buttonStyle = QStringLiteral(
+        "QPushButton { background: #FFFFFF; color: %1; border: 1px solid %1; "
+        "border-radius: 4px; padding: 4px 10px; font-size: 12px; }"
+        "QPushButton:hover { background: %2; }");
+    edit->setStyleSheet(buttonStyle.arg(QStringLiteral("#2463EB"), QStringLiteral("#EFF6FF")));
+    remove->setStyleSheet(buttonStyle.arg(QStringLiteral("#DC2626"), QStringLiteral("#FEF2F2")));
+    edit->setCursor(Qt::PointingHandCursor);
+    remove->setCursor(Qt::PointingHandCursor);
+    layout->addStretch();
+    layout->addWidget(edit);
+    layout->addWidget(remove);
+    layout->addStretch();
+    tableView_->setIndexWidget(model_->index(row, ColActions), actions);
+
+    connect(edit, &QPushButton::clicked, this, [this, item]() {
+        const Achievement &achievement = item.achievement;
+        AchievementDialog dialog(achievement.taskId, item.taskCategory,
+                                 achievement.workContent, this, achievement);
+        if (dialog.exec() == QDialog::Accepted) loadData();
+    });
+    connect(remove, &QPushButton::clicked, this, [this, id = item.achievement.id]() {
+        if (AchievementDialog::confirmDelete(id, this)) loadData();
+    });
 }
 
 void AchievementView::updateStats(int totalCount, qint64 totalAmount, int keyCount, int completedCount)

@@ -68,6 +68,17 @@
 #include "utils/AmountUtil.h"
 #include "utils/Logger.h"
 
+namespace {
+const char kDetailPrimaryAction[] =
+    "QPushButton { background: #2463EB; color: #FFFFFF; border: none; "
+    "font-size: 14px; font-weight: 400; padding: 6px 16px; border-radius: 6px; }"
+    "QPushButton:hover { background: #1D4ED8; }";
+const char kDetailDeleteAction[] =
+    "QPushButton { background: #DC2626; color: #FFFFFF; border: none; "
+    "font-size: 14px; font-weight: 400; padding: 6px 16px; border-radius: 6px; }"
+    "QPushButton:hover { background: #B91C1C; }";
+}
+
 // ============================================================================
 // 时间轴自定义委托（文件内局部类，无需 Q_OBJECT）
 // ============================================================================
@@ -383,20 +394,14 @@ QFrame* TaskDetailView::buildHeader()
     editBtn_->setObjectName("headerEditBtn");
     editBtn_->setCursor(Qt::PointingHandCursor);
     editBtn_->setFocusPolicy(Qt::NoFocus);
-    editBtn_->setStyleSheet(
-        "#headerEditBtn { background: #2463EB; color: #FFFFFF; border: none; "
-        "font-size: 14px; font-weight: 400; padding: 6px 16px; border-radius: 6px; }"
-        "#headerEditBtn:hover { background: #1D4ED8; }");
+    editBtn_->setStyleSheet(kDetailPrimaryAction);
 
     // 删除按钮（红色实心按钮，白色字体）
     deleteBtn_ = new QPushButton(QStringLiteral("删除"), header);
     deleteBtn_->setObjectName("headerDeleteBtn");
     deleteBtn_->setCursor(Qt::PointingHandCursor);
     deleteBtn_->setFocusPolicy(Qt::NoFocus);
-    deleteBtn_->setStyleSheet(
-        "#headerDeleteBtn { background: #DC2626; color: #FFFFFF; border: none; "
-        "font-size: 14px; font-weight: 400; padding: 6px 16px; border-radius: 6px; }"
-        "#headerDeleteBtn:hover { background: #B91C1C; }");
+    deleteBtn_->setStyleSheet(kDetailDeleteAction);
 
     // 完成按钮（三态，updateCompleteButton 中设置样式）
     completeBtn_ = new QPushButton(header);
@@ -695,35 +700,45 @@ QFrame* TaskDetailView::buildAchievementSection()
 
     achievementLabel_ = new QLabel(achievementFrame_);
     achievementLabel_->setWordWrap(true);
+    achievementLabel_->setTextFormat(Qt::PlainText);
     achievementLabel_->setStyleSheet("font-size: 14px; color: #0F172A; border: none;");
 
     addAchievementBtn_ = new QPushButton(QStringLiteral("\u8865\u5f55\u6210\u679c"), achievementFrame_);  // 补录成果
     addAchievementBtn_->setObjectName("addAchievementBtn");
     addAchievementBtn_->setCursor(Qt::PointingHandCursor);
     addAchievementBtn_->setFocusPolicy(Qt::NoFocus);
-    addAchievementBtn_->setStyleSheet(
-        "#addAchievementBtn { border: 1px solid #2463EB; background: #FFFFFF; color: #2463EB; "
-        "font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 6px; }"
-        "#addAchievementBtn:hover { background: #EFF6FF; }");
+    addAchievementBtn_->setStyleSheet(kDetailPrimaryAction);
     addAchievementBtn_->hide();
 
+    deleteAchievementBtn_ = new QPushButton(QStringLiteral("删除成果"), achievementFrame_);
+    deleteAchievementBtn_->setObjectName("deleteAchievementBtn");
+    deleteAchievementBtn_->setCursor(Qt::PointingHandCursor);
+    deleteAchievementBtn_->setFocusPolicy(Qt::NoFocus);
+    deleteAchievementBtn_->setStyleSheet(kDetailDeleteAction);
+    deleteAchievementBtn_->hide();
+
     contentRow->addWidget(achievementLabel_, 1);
-    contentRow->addWidget(addAchievementBtn_);
+    contentRow->addWidget(addAchievementBtn_, 0, Qt::AlignVCenter);
+    contentRow->addWidget(deleteAchievementBtn_, 0, Qt::AlignVCenter);
     layout->addLayout(contentRow);
 
-    // T4.4: 补录成果 — 打开成果填写弹窗
     connect(addAchievementBtn_, &QPushButton::clicked, this, [this]() {
         TaskDetailUseCase useCase;
-        auto optTask = useCase.findTask(taskId_);
-        if (!optTask) return;
+        const auto task = useCase.findTask(taskId_);
+        const auto achievement = useCase.findAchievement(taskId_);
+        if (!task || (!achievement && !task->isCompleted())) return;
 
-        AchievementDialog dialog(taskId_, optTask->category, optTask->title, this);
+        AchievementDialog dialog(taskId_, task->category, task->title, this, achievement);
         if (dialog.exec() == QDialog::Accepted) {
-            auto achievement = dialog.getAchievement();
-            if (achievement) {
-                loadAchievement();  // 刷新成果区，显示新录入的成果
-                emit taskUpdated();  // 通知父窗口刷新
-            }
+            loadAchievement();
+            emit taskUpdated();
+        }
+    });
+    connect(deleteAchievementBtn_, &QPushButton::clicked, this, [this]() {
+        const auto achievement = TaskDetailUseCase().findAchievement(taskId_);
+        if (achievement && AchievementDialog::confirmDelete(achievement->id, this)) {
+            loadAchievement();
+            emit taskUpdated();
         }
     });
 
@@ -916,49 +931,29 @@ void TaskDetailView::loadAchievement()
     }
     const Task &task = optTask.value();
 
-    // 三态：
-    // 1. 未完成 → "(尚未完成)" 灰色文字
-    // 2. 已完成有成果 → 只读详情（Phase 4 实现，此处占位）
-    // 3. 已完成无成果 → "暂无成果 [补录成果]" 按钮
-    if (!task.isCompleted()) {
-        achievementLabel_->setText(QStringLiteral("\uff08\u5c1a\u672a\u5b8c\u6210\uff09\n\u5b8c\u6210\u540e\u53ef\u5728\u6b64\u5904\u67e5\u770b\u6210\u679c\u8bb0\u5f55"));  // （尚未完成）完成后可在此处查看成果记录
-        achievementLabel_->setStyleSheet("font-size: 14px; color: #0F172A; border: none;");
-        addAchievementBtn_->hide();
-    } else {
-        // 已完成：查询是否已有成果记录
-        auto optAchievement = useCase.findAchievement(taskId_);
-        if (optAchievement.has_value()) {
-            // 有成果 → 只读详情
-            const Achievement &ach = optAchievement.value();
-            QStringList tags;
-            if (ach.isAnnual) tags << QStringLiteral("\u7eb3\u5165\u5e74\u5ea6\u6210\u679c");  // 纳入年度成果
-            if (ach.isKeyAchievement) tags << QStringLiteral("\u91cd\u70b9\u6210\u679c");  // 重点成果
-            QString tagText = tags.isEmpty() ? QStringLiteral("-")
-                                             : tags.join(QStringLiteral(" \u00b7 "));  // ·
+    const auto achievement = useCase.findAchievement(taskId_);
+    addAchievementBtn_->setText(achievement ? QStringLiteral("修改成果") : QStringLiteral("补录成果"));
+    addAchievementBtn_->setVisible(achievement.has_value() || task.isCompleted());
+    deleteAchievementBtn_->setVisible(achievement.has_value());
 
-            QString detail = QStringLiteral(
-                "\u5de5\u4f5c\u5185\u5bb9\uff1a%1\n"   // 工作内容：
-                "\u5de5\u4f5c\u5bf9\u8c61\uff1a%2\n"   // 工作对象：
-                "\u6210\u679c\u6570\u91cf\uff1a%3\n"   // 成果数量：
-                "\u6210\u679c\u91d1\u989d\uff1a%4 \u5143\n"  // 成果金额： 元
-                "\u6210\u679c\u8bf4\u660e\uff1a%5\n"   // 成果说明：
-                "\u6807\u8bb0\uff1a%6")                 // 标记：
-                .arg(ach.workContent.isEmpty() ? QStringLiteral("-") : ach.workContent,
-                     ach.workObject.isEmpty() ? QStringLiteral("-") : ach.workObject,
-                     QString::number(ach.resultCount),
-                     AmountUtil::centsToYuan(ach.resultAmount),
-                     ach.description.isEmpty() ? QStringLiteral("-") : ach.description,
-                     tagText);
-            achievementLabel_->setText(detail);
-            achievementLabel_->setStyleSheet("font-size: 14px; color: #0F172A; border: none;");
-            addAchievementBtn_->hide();
-        } else {
-            // 无成果 → "暂无成果" + 补录按钮
-            achievementLabel_->setText(QStringLiteral("\u6682\u65e0\u6210\u679c"));  // 暂无成果
-            achievementLabel_->setStyleSheet("font-size: 14px; color: #0F172A; border: none;");
-            addAchievementBtn_->show();
-        }
+    if (!achievement) {
+        achievementLabel_->setText(task.isCompleted() ? QStringLiteral("暂无成果")
+            : QStringLiteral("（尚未完成）\n完成后可在此处查看成果记录"));
+        return;
     }
+
+    const Achievement &ach = *achievement;
+    QStringList tags;
+    if (ach.isAnnual) tags << QStringLiteral("纳入年度成果");
+    if (ach.isKeyAchievement) tags << QStringLiteral("重点成果");
+    achievementLabel_->setText(QStringLiteral(
+        "工作内容：%1\n工作对象：%2\n成果数量：%3\n成果金额：%4 元\n成果说明：%5\n标记：%6")
+        .arg(ach.workContent.isEmpty() ? QStringLiteral("-") : ach.workContent,
+             ach.workObject.isEmpty() ? QStringLiteral("-") : ach.workObject,
+             QString::number(ach.resultCount),
+             AmountUtil::centsToYuan(ach.resultAmount),
+             ach.description.isEmpty() ? QStringLiteral("-") : ach.description,
+             tags.isEmpty() ? QStringLiteral("-") : tags.join(QStringLiteral(" · "))));
 }
 
 void TaskDetailView::updateCompleteButton(const QString &status)

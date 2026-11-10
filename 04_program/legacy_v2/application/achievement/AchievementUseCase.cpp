@@ -17,7 +17,8 @@ QList<AchievementListItem> AchievementUseCase::listByYear(int year) const
     items.reserve(achievements.size());
     for (const Achievement &achievement : achievements) {
         const auto task = tasks.findById(achievement.taskId);
-        items.append({achievement, task.has_value() ? task->taskNo : QString()});
+        items.append({achievement, task ? task->taskNo : QString(),
+                      task ? task->category : QString()});
     }
     return items;
 }
@@ -34,6 +35,16 @@ AchievementYearStats AchievementUseCase::stats(int year) const
 int AchievementUseCase::create(const Achievement &achievement) const
 {
     return AchievementDao(DatabaseManager::instance().database()).insert(achievement);
+}
+
+bool AchievementUseCase::update(const Achievement &achievement) const
+{
+    return AchievementDao(DatabaseManager::instance().database()).update(achievement);
+}
+
+bool AchievementUseCase::remove(int achievementId) const
+{
+    return AchievementDao(DatabaseManager::instance().database()).deleteById(achievementId);
 }
 
 WordExport::ExportResult AchievementUseCase::exportAnnualReport(int year, const QString &outputPath) const

@@ -105,6 +105,7 @@ private:
     QFrame *achievementFrame_;
     QLabel *achievementLabel_;
     QPushButton *addAchievementBtn_;
+    QPushButton *deleteAchievementBtn_;
 
     // ---- UI 构建 ----
     void setupUI();

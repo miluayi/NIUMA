@@ -2,7 +2,7 @@
  * @file AchievementDialog.h
  * @brief 成果填写弹窗（T4.2）
  *
- * 无边框模态对话框，560px 宽，完成任务时填写成果信息。
+ * 无边框模态对话框，560px 宽，支持填写和编辑成果信息。
  * 字段：工作内容 / 工作对象 / 成果数量 / 成果金额（元） /
  *       成果说明 / 纳入年度成果 / 重点成果
  *
@@ -30,7 +30,9 @@ class AchievementDialog : public QDialog {
 
 public:
     AchievementDialog(int taskId, const QString &taskCategory,
-                      const QString &taskTitle, QWidget *parent = nullptr);
+                      const QString &taskTitle, QWidget *parent = nullptr,
+                      const std::optional<Achievement> &existing = std::nullopt);
+    static bool confirmDelete(int achievementId, QWidget *parent);
 
     /**
      * @brief 获取成果数据
@@ -49,6 +51,7 @@ private:
     int taskId_;
     QString taskCategory_;
     QString taskTitle_;
+    std::optional<Achievement> existing_;
 
     // 控件指针
     QLabel *guideLabel_;

@@ -40,11 +40,13 @@
 // ============================================================================
 
 AchievementDialog::AchievementDialog(int taskId, const QString &taskCategory,
-                                     const QString &taskTitle, QWidget *parent)
+                                     const QString &taskTitle, QWidget *parent,
+                                     const std::optional<Achievement> &existing)
     : QDialog(parent)
     , taskId_(taskId)
     , taskCategory_(taskCategory)
     , taskTitle_(taskTitle)
+    , existing_(existing)
     , guideLabel_(nullptr)
     , workContentEdit_(nullptr)
     , workObjectEdit_(nullptr)
@@ -55,6 +57,32 @@ AchievementDialog::AchievementDialog(int taskId, const QString &taskCategory,
     , keyCheck_(nullptr)
 {
     setupUI();
+    if (existing_) {
+        workContentEdit_->setText(existing_->workContent);
+        workObjectEdit_->setText(existing_->workObject);
+        resultCountEdit_->setText(QString::number(existing_->resultCount));
+        resultAmountEdit_->setText(AmountUtil::centsToYuan(existing_->resultAmount));
+        descEdit_->setPlainText(existing_->description);
+        annualCheck_->setChecked(existing_->isAnnual);
+        keyCheck_->setChecked(existing_->isKeyAchievement);
+    }
+}
+
+bool AchievementDialog::confirmDelete(int achievementId, QWidget *parent)
+{
+    const int answer = StyledMessageBox::question(
+        parent, QStringLiteral("删除成果"),
+        QStringLiteral("确定删除这条成果信息吗？删除后无法恢复，关联任务将保留。"),
+        QStringLiteral("确认删除"), QStringLiteral("取消"));
+    if (answer != StyledMessageBox::Yes) {
+        return false;
+    }
+    if (!AchievementUseCase().remove(achievementId)) {
+        StyledMessageBox::warning(parent, QStringLiteral("删除失败"),
+                                  QStringLiteral("成果删除失败，请刷新后重试。"));
+        return false;
+    }
+    return true;
 }
 
 // ============================================================================
@@ -88,7 +116,8 @@ void AchievementDialog::setupUI()
     headerLayout->setContentsMargins(Spacing::XXL, Spacing::XL, Spacing::XL, Spacing::XL);
     headerLayout->setSpacing(Spacing::SM);
 
-    QLabel *titleLabel = new QLabel(QStringLiteral("\u586B\u5199\u6210\u679C\u4FE1\u606F"), headerFrame);  // 填写成果信息
+    QLabel *titleLabel = new QLabel(existing_ ? QStringLiteral("编辑成果信息")
+                                             : QStringLiteral("填写成果信息"), headerFrame);
     QFont titleFont(QStringLiteral("Segoe UI"), 18, QFont::Normal);
     titleLabel->setFont(titleFont);
     titleLabel->setStyleSheet("color: #0F172A; border: none;");
@@ -268,7 +297,8 @@ void AchievementDialog::setupUI()
     footerLayout->setSpacing(Spacing::MD);
 
     // "跳过" 按钮（ghost/secondary，左）
-    QPushButton *skipBtn = new QPushButton(QStringLiteral("\u8DF3\u8FC7"), footerFrame);  // 跳过
+    QPushButton *skipBtn = new QPushButton(existing_ ? QStringLiteral("取消")
+                                                    : QStringLiteral("跳过"), footerFrame);
     skipBtn->setCursor(Qt::PointingHandCursor);
     skipBtn->setFocusPolicy(Qt::NoFocus);
     skipBtn->setMinimumWidth(96);
@@ -287,7 +317,8 @@ void AchievementDialog::setupUI()
         "}");
 
     // "保存并完成" 按钮（primary，右）
-    QPushButton *saveBtn = new QPushButton(QStringLiteral("\u4FDD\u5B58\u5E76\u5B8C\u6210"), footerFrame);  // 保存并完成
+    QPushButton *saveBtn = new QPushButton(existing_ ? QStringLiteral("保存")
+                                                    : QStringLiteral("保存并完成"), footerFrame);
     saveBtn->setObjectName("btnPrimary");
     saveBtn->setCursor(Qt::PointingHandCursor);
     saveBtn->setFocusPolicy(Qt::NoFocus);
@@ -429,7 +460,7 @@ void AchievementDialog::onSaveClicked()
     }
 
     // 构造 Achievement
-    Achievement achievement;
+    Achievement achievement = existing_.value_or(Achievement{});
     achievement.taskId = taskId_;
     achievement.workContent = workContentEdit_->text().trimmed();
     achievement.workObject = workObjectEdit_->text().trimmed();
@@ -443,26 +474,34 @@ void AchievementDialog::onSaveClicked()
     }
 
     // 成果金额：元 → 分（AmountUtil::yuanToCents）
-    achievement.resultAmount = AmountUtil::yuanToCents(resultAmountEdit_->text().trimmed());
+    const QString amount = resultAmountEdit_->text().trimmed();
+    if (!existing_ || amount != AmountUtil::centsToYuan(existing_->resultAmount)) {
+        achievement.resultAmount = AmountUtil::yuanToCents(amount);
+    }
 
     achievement.description = descEdit_->toPlainText();
     achievement.isAnnual = annualCheck_->isChecked();
     achievement.isKeyAchievement = keyCheck_->isChecked();
-    achievement.createTime = QDateTime::currentDateTime();
 
-    // 入库
-    int newId = AchievementUseCase().create(achievement);
-    if (newId <= 0) {
+    const AchievementUseCase useCase;
+    bool saved;
+    if (existing_) {
+        saved = useCase.update(achievement);
+    } else {
+        achievement.createTime = QDateTime::currentDateTime();
+        achievement.id = useCase.create(achievement);
+        saved = achievement.id > 0;
+    }
+    if (!saved) {
         StyledMessageBox::warning(this, QStringLiteral("\u4FDD\u5B58\u5931\u8D25"),  // 保存失败
                               QStringLiteral("\u6210\u679C\u4FDD\u5B58\u5931\u8D25\uFF0C\u8BF7\u91CD\u8BD5"));  // 成果保存失败，请重试
         return;
     }
 
-    achievement.id = newId;
     result_ = achievement;
 
     Logger::instance().info(QStringLiteral("AchievementDialog: \u6210\u679C\u5DF2\u4FDD\u5B58, id=%1, task_id=%2")
-                                .arg(newId)
+                                .arg(achievement.id)
                                 .arg(taskId_));  // 成果已保存
 
     QDialog::accept();  // 调用基类，避免递归
