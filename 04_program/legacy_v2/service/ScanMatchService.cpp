@@ -20,6 +20,7 @@
 #include <QSqlQuery>
 
 #include "DatabaseManager.h"
+#include "database/AchievementDao.h"
 #include "FileService.h"
 #include "ReferenceMaterialDao.h"
 #include "TaskDao.h"
@@ -66,6 +67,29 @@ void applyRecoveredLocation(Task &task, const QString &sourceDir)
     }
     if (task.handler.trimmed().isEmpty()) task.handler = QStringLiteral("本人");
     normalizeUnknownOtherHandler(task);
+}
+
+bool persistScannedTask(Task &task, const std::optional<Achievement> &achievement,
+                        bool requireInfoFile)
+{
+    QSqlDatabase db = DatabaseManager::instance().database();
+    if (!db.transaction()) return false;
+    TaskDao tasks(db);
+    bool saved;
+    if (task.id > 0) {
+        saved = tasks.update(task);
+    } else {
+        task.id = tasks.insert(task);
+        saved = task.id > 0;
+    }
+    if (!saved
+        || (achievement && !AchievementDao(db).restoreForTask(task.id, *achievement))
+        || (requireInfoFile && !TaskInfoFile::write(task))
+        || !db.commit()) {
+        db.rollback();
+        return false;
+    }
+    return true;
 }
 }
 
@@ -636,8 +660,9 @@ TaskResult ScanMatchService::importScanItem(const ScanImportItem &item, const QS
 
         // Folder location is authoritative for status; the info file supplies
         // fields that cannot be reconstructed from the folder name.
-        const auto saved = TaskInfoFile::read(item.folderPath);
-        if (saved && saved->taskNo == item.taskNo) {
+        const auto snapshot = TaskInfoFile::readSnapshot(item.folderPath);
+        const Task *saved = snapshot && snapshot->task.taskNo == item.taskNo ? &snapshot->task : nullptr;
+        if (saved) {
             task.title = saved->title;
             task.category = saved->category;
             task.source = saved->source;
@@ -659,9 +684,7 @@ TaskResult ScanMatchService::importScanItem(const ScanImportItem &item, const QS
         // 所属工作区决定状态；无具体办理人时只为他人办理任务兜底。
         applyRecoveredLocation(task, item.sourceDir);
 
-        TaskDao taskDao(DatabaseManager::instance().database());
-        int newId = taskDao.insert(task);
-        if (newId <= 0) {
+        if (!persistScannedTask(task, saved ? snapshot->achievement : std::nullopt, false)) {
             result.error = QStringLiteral("任务入库失败");
             Logger::instance().error(
                 QStringLiteral("ScanMatchService::importScanItem 任务入库失败: %1").arg(item.folderName));
@@ -669,14 +692,13 @@ TaskResult ScanMatchService::importScanItem(const ScanImportItem &item, const QS
         }
 
         result.ok = true;
-        result.taskId = newId;
-        task.id = newId;
+        result.taskId = task.id;
         if (!TaskInfoFile::write(task))
             Logger::instance().warn(QStringLiteral("扫描导入后写入任务信息文件失败: %1")
                                         .arg(item.folderPath));
         Logger::instance().info(
             QStringLiteral("ScanMatchService::importScanItem 任务导入成功: %1 (id=%2)")
-                .arg(item.folderName).arg(newId));
+                .arg(item.folderName).arg(task.id));
     }
 
     return result;
@@ -738,7 +760,9 @@ TaskResult ScanMatchService::resolveConflict(const ScanImportItem &item, bool me
     }
     TaskDao dao(DatabaseManager::instance().database());
     auto existing = item.existingId > 0 ? dao.findById(item.existingId) : std::optional<Task>();
-    const auto info = TaskInfoFile::read(item.folderPath);
+    const auto snapshot = TaskInfoFile::readSnapshot(item.folderPath);
+    const Task *info = snapshot ? &snapshot->task : nullptr;
+    const auto achievement = snapshot ? snapshot->achievement : std::nullopt;
     if (item.existingId > 0 && !existing) {
         result.error = QStringLiteral("原任务已发生变化，请重新扫描");
         return result;
@@ -832,8 +856,7 @@ TaskResult ScanMatchService::resolveConflict(const ScanImportItem &item, bool me
         }
         task.hasSubdirs = !QDir(task.folderPath).entryList(
             QDir::Dirs | QDir::NoDotAndDotDot).isEmpty();
-        if (!dao.update(task) || !TaskInfoFile::write(task)) {
-            dao.update(*existing);
+        if (!persistScannedTask(task, achievement, true)) {
             if (renamed) QDir().rename(task.folderPath, item.folderPath);
             result.error = QStringLiteral("任务信息修复失败，已尝试回退");
             return result;
@@ -882,8 +905,7 @@ TaskResult ScanMatchService::resolveConflict(const ScanImportItem &item, bool me
             applyRecoveredLocation(task, item.sourceDir);
             task.hasSubdirs = !QDir(target).entryList(
                 QDir::Dirs | QDir::NoDotAndDotDot).isEmpty();
-            if (!dao.update(task) || !TaskInfoFile::write(task)) {
-                dao.update(*existing);
+            if (!persistScannedTask(task, achievement, true)) {
                 if (renamed) QDir().rename(target, item.folderPath);
                 if (oldFolderExists) QDir().rename(retained, existing->folderPath);
                 result.error = QStringLiteral("新任务信息写入失败，已尝试回退");
@@ -907,10 +929,9 @@ TaskResult ScanMatchService::resolveConflict(const ScanImportItem &item, bool me
         }
         task.hasSubdirs = !QDir(task.folderPath).entryList(
             QDir::Dirs | QDir::NoDotAndDotDot).isEmpty();
-        if (!dao.update(task) || !TaskInfoFile::write(task)) {
+        if (!persistScannedTask(task, achievement, true)) {
             if (task.folderPath != existing->folderPath)
                 QDir().rename(task.folderPath, existing->folderPath);
-            dao.update(*existing);
             result.error = QStringLiteral("合并信息写入失败，来源目录仍保留");
             return result;
         }
@@ -963,21 +984,13 @@ TaskResult ScanMatchService::resolveConflict(const ScanImportItem &item, bool me
     }
     task.hasSubdirs = !QDir(task.folderPath).entryList(QDir::Dirs | QDir::NoDotAndDotDot).isEmpty();
     if (info) task.createTime = info->createTime;
-    const int id = dao.insert(task);
-    if (id <= 0) {
+    if (!persistScannedTask(task, achievement, true)) {
         if (renamed) QDir().rename(task.folderPath, item.folderPath);
-        result.error = QStringLiteral("任务写入数据库失败");
-        return result;
-    }
-    task.id = id;
-    if (!TaskInfoFile::write(task)) {
-        dao.deleteById(id);
-        if (renamed) QDir().rename(task.folderPath, item.folderPath);
-        result.error = QStringLiteral("任务信息文件写入失败");
+        result.error = QStringLiteral("任务、成果或信息文件写入失败");
         return result;
     }
     result.ok = true;
-    result.taskId = id;
+    result.taskId = task.id;
     return result;
 }
 

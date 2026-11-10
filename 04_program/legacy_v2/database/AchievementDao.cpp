@@ -50,12 +50,14 @@ std::optional<Achievement> AchievementDao::findById(int id)
     return std::nullopt;
 }
 
-std::optional<Achievement> AchievementDao::findByTaskId(int taskId)
+std::optional<Achievement> AchievementDao::findByTaskId(int taskId, bool *ok)
 {
     QSqlQuery query(db_);
     query.prepare("SELECT * FROM achievement WHERE task_id = ?");
     query.addBindValue(taskId);
-    if (!query.exec()) {
+    const bool queried = query.exec();
+    if (ok) *ok = queried;
+    if (!queried) {
         Logger::instance().error(QStringLiteral("AchievementDao::findByTaskId 失败: %1").arg(query.lastError().text()));
         return std::nullopt;
     }
@@ -140,7 +142,8 @@ int AchievementDao::insert(const Achievement &achievement)
     query.addBindValue(achievement.isAnnual ? 1 : 0);
     query.addBindValue(achievement.isKeyAchievement ? 1 : 0);
     // create_time 统一格式 "yyyy-MM-dd HH:mm:ss"
-    query.addBindValue(DateUtil::currentDateTimeStr());
+    query.addBindValue(achievement.createTime.isValid()
+        ? DateUtil::formatDateTime(achievement.createTime) : DateUtil::currentDateTimeStr());
 
     if (!query.exec()) {
         Logger::instance().error(QStringLiteral("AchievementDao::insert 失败: %1").arg(query.lastError().text()));
@@ -151,6 +154,19 @@ int AchievementDao::insert(const Achievement &achievement)
         return lastId.toInt();
     }
     return -1;
+}
+
+bool AchievementDao::restoreForTask(int taskId, const Achievement &snapshot)
+{
+    bool queried = false;
+    const auto existing = findByTaskId(taskId, &queried);
+    if (!queried) return false;
+    if (existing) return true;
+
+    Achievement restored = snapshot;
+    restored.id = 0;
+    restored.taskId = taskId;
+    return insert(restored) > 0;
 }
 
 bool AchievementDao::update(const Achievement &achievement)

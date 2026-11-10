@@ -22,6 +22,7 @@
 #include "BackupService.h"
 #include "ScanMatchService.h"
 #include "TaskInfoFile.h"
+#include "database/AchievementDao.h"
 #include "ReferenceInfoFile.h"
 #include "application/recyclebin/RecycleBinUseCase.h"
 #include "utils/FileUtil.h"
@@ -230,9 +231,18 @@ int main(int argc, char *argv[])
         FileService::kDirArchived + QStringLiteral("/20260922-777_[查]_迁移任务"));
     if (!QDir().mkpath(duplicate)) return 18;
     Task duplicateInfo = details;
+    duplicateInfo.id = imported->id;
     duplicateInfo.folderPath = duplicate;
     duplicateInfo.tag = QStringLiteral("合并标签");
-    if (!TaskInfoFile::write(duplicateInfo)) return 19;
+    AchievementDao achievements(DatabaseManager::instance().database());
+    Achievement incomingAchievement;
+    incomingAchievement.taskId = imported->id;
+    incomingAchievement.workContent = QStringLiteral("合并目录中的成果");
+    incomingAchievement.resultAmount = 12599;
+    incomingAchievement.createTime = QDateTime(QDate(2022, 6, 1), QTime(10, 30));
+    const int incomingAchievementId = achievements.insert(incomingAchievement);
+    if (incomingAchievementId <= 0 || !TaskInfoFile::write(duplicateInfo)
+        || !achievements.deleteById(incomingAchievementId)) return 19;
     QFile existingAttachment(QDir(incoming).filePath(QStringLiteral("相同.txt")));
     if (!existingAttachment.open(QIODevice::WriteOnly) || existingAttachment.write("old") != 3) return 20;
     existingAttachment.close();
@@ -246,7 +256,11 @@ int main(int argc, char *argv[])
     const TaskResult merged = scanner.resolveConflict(conflict, true,
         {{QStringLiteral("tag"), QStringLiteral("info")}});
     const auto afterMerge = taskDao.findById(imported->id);
+    const auto mergedAchievement = achievements.findByTaskId(imported->id);
     if (!merged.ok || !afterMerge || afterMerge->tag != QStringLiteral("合并标签")
+        || !mergedAchievement || mergedAchievement->workContent != incomingAchievement.workContent
+        || mergedAchievement->resultAmount != incomingAchievement.resultAmount
+        || mergedAchievement->createTime != incomingAchievement.createTime
         || !QFile::exists(QDir(incoming).filePath(QStringLiteral("相同 (合并来源1).txt")))) return 23;
 
     // 简易备份仅保留 info 和目录结构；全量备份还保留附件。恢复模式跟随清单。

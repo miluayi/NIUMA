@@ -31,7 +31,7 @@ public:
     std::optional<Achievement> findById(int id);
 
     // 按 task_id 查询（一个 task 对应一条 achievement）
-    std::optional<Achievement> findByTaskId(int taskId);
+    std::optional<Achievement> findByTaskId(int taskId, bool *ok = nullptr);
 
     // 按年份查询（create_time 年份匹配）
     QList<Achievement> findByYear(int year);
@@ -44,6 +44,7 @@ public:
 
     // 插入成果（返回新 ID，失败返回 -1）
     int insert(const Achievement &achievement);
+    bool restoreForTask(int taskId, const Achievement &snapshot);
 
     // 更新成果（更新除 id、create_time 外的所有字段）
     bool update(const Achievement &achievement);

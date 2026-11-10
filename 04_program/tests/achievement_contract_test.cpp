@@ -25,9 +25,12 @@
 #include "SettingsDao.h"
 #include "TaskDetailView.h"
 #include "database/AchievementDao.h"
+#include "database/TaskDao.h"
 #include "models/ExportConfig.h"
 #include "models/Task.h"
 #include "service/FileService.h"
+#include "service/ScanMatchService.h"
+#include "service/TaskInfoFile.h"
 #include "service/TaskService.h"
 #include "utils/PathUtil.h"
 #include "utils/WordExport.h"
@@ -48,9 +51,9 @@ TaskResult createTask(const QString &title, bool isKeyTask = false)
     return service.createTask(task);
 }
 
-void saveTriggeredAchievement()
+void saveTriggeredAchievement(const QString &capturePath = QString())
 {
-    QTimer::singleShot(0, []() {
+    QTimer::singleShot(0, [capturePath]() {
         auto *dialog = qobject_cast<AchievementDialog *>(QApplication::activeModalWidget());
         if (!dialog) return;
         dialog->findChild<QLineEdit *>(QStringLiteral("achievementWorkContentEdit"))
@@ -58,6 +61,7 @@ void saveTriggeredAchievement()
         dialog->findChild<QLineEdit *>(QStringLiteral("achievementResultCountEdit"))->setText(QStringLiteral("2"));
         dialog->findChild<QLineEdit *>(QStringLiteral("achievementResultAmountEdit"))->setText(QStringLiteral("9.50"));
         dialog->findChild<QCheckBox *>(QStringLiteral("achievementAnnualCheck"))->setChecked(true);
+        if (!capturePath.isEmpty()) dialog->grab().save(capturePath);
         QMetaObject::invokeMethod(dialog, "onSaveClicked", Qt::DirectConnection);
     });
 }
@@ -165,6 +169,56 @@ bool opensTaskDetail(QTableView *table, int row, const QString &expectedTitle)
     QApplication::sendEvent(table->viewport(), &press);
     QApplication::sendEvent(table->viewport(), &release);
     return opened;
+}
+
+bool verifyAchievementRecovery(const Task &task, const QString &workDir)
+{
+    const auto db = DatabaseManager::instance().database();
+    AchievementDao achievements(db);
+    Achievement historical;
+    historical.taskId = task.id;
+    historical.workContent = QStringLiteral("迁移成果");
+    historical.workObject = QStringLiteral("办理对象");
+    historical.resultCount = 7;
+    historical.resultAmount = 9007199254740993LL;
+    historical.description = QStringLiteral("说明\n第二行");
+    historical.isAnnual = true;
+    historical.isKeyAchievement = true;
+    historical.createTime = QDateTime(QDate(2021, 12, 31), QTime(23, 59, 0));
+    const auto matches = [&](const std::optional<Achievement> &saved) {
+        return saved && saved->workContent == historical.workContent
+            && saved->workObject == historical.workObject && saved->resultCount == historical.resultCount
+            && saved->resultAmount == historical.resultAmount && saved->description == historical.description
+            && saved->isAnnual && saved->isKeyAchievement && saved->createTime == historical.createTime;
+    };
+    const QString path = TaskInfoFile::path(task.folderPath);
+    const QString retained = path + QStringLiteral(".saved");
+    if (!QFile::rename(path, retained) || !QDir().mkdir(path)) return false;
+    const bool rejected = AchievementUseCase().create(historical) <= 0
+        && !achievements.findByTaskId(task.id);
+    if (!QDir().rmdir(path) || !QFile::rename(retained, path) || !rejected) return false;
+
+    if (achievements.insert(historical) <= 0 || !TaskInfoFile::reconcileAchievement(task)) return false;
+    const auto snapshot = TaskInfoFile::readSnapshot(task.folderPath);
+    if (!snapshot || !matches(snapshot->achievement)) return false;
+
+    TaskDao tasks(db);
+    if (!tasks.deleteById(task.id)) return false;
+    ScanMatchService scanner;
+    for (const auto &item : scanner.scanForImport(workDir)) {
+        if (item.taskNo != task.taskNo) continue;
+        const auto result = scanner.importScanItem(item, workDir);
+        if (!result.ok || result.taskId == task.id
+            || !matches(achievements.findByTaskId(result.taskId))) return false;
+        const auto recovered = tasks.findById(result.taskId);
+        if (!recovered || !achievements.deleteByTaskId(result.taskId)
+            || !TaskInfoFile::reconcileAchievement(*recovered)
+            || !TaskInfoFile::reconcileAchievement(*recovered)) return false;
+        const auto restored = achievements.findByTaskId(result.taskId);
+        return matches(restored) && restored->taskId == result.taskId
+            && achievements.countByYear(2021) == 1;
+    }
+    return false;
 }
 
 } // namespace
@@ -309,6 +363,12 @@ int main(int argc, char *argv[])
     if (!detailEdited || detailEdited->id != directAchievement->id
         || detailEdited->createTime != directAchievement->createTime
         || detailEdited->workContent != detailContent || detailEdited->resultAmount != 2250) return 33;
+    const auto completedDirect = taskService.getTaskById(directTask.taskId);
+    if (!completedDirect) return 48;
+    const auto editedSnapshot = TaskInfoFile::readSnapshot(completedDirect->folderPath);
+    if (!editedSnapshot || !editedSnapshot->achievement
+        || editedSnapshot->achievement->workContent != detailContent
+        || editedSnapshot->achievement->resultAmount != 2250) return 49;
     recorded.close();
 
     view->refresh();
@@ -342,6 +402,8 @@ int main(int argc, char *argv[])
         || keyStat->text() != QStringLiteral("1")) return 37;
     const auto unchangedTask = taskService.getTaskById(directTask.taskId);
     if (!unchangedTask || !unchangedTask->isCompleted()) return 38;
+    const auto deletedSnapshot = TaskInfoFile::readSnapshot(unchangedTask->folderPath);
+    if (!deletedSnapshot || deletedSnapshot->achievement) return 50;
 
     TaskDetailView otherDetail(triggerTask.taskId);
     otherDetail.show();
@@ -354,10 +416,13 @@ int main(int argc, char *argv[])
     if (otherRemove->isVisible() || !supplement->isVisible() || supplement->text() != QStringLiteral("补录成果")
         || supplement->height() != headerEdit->height()
         || !otherSection->grab().save(QDir(root).filePath("achievement-detail-supplement.png"))) return 40;
-    saveTriggeredAchievement();
+    const QString supplementCapture = QDir(root).filePath("achievement-supplement-default.png");
+    saveTriggeredAchievement(supplementCapture);
     supplement->click();
-    if (!achievementDao.findByTaskId(triggerTask.taskId)
+    const auto supplemented = achievementDao.findByTaskId(triggerTask.taskId);
+    if (!supplemented || !supplemented->isKeyAchievement || !QFile::exists(supplementCapture)
         || supplement->text() != QStringLiteral("修改成果") || !otherRemove->isVisible()) return 41;
+    if (!verifyAchievementRecovery(*unchangedTask, fileService.getWorkDir())) return 51;
 
     DatabaseManager::instance().close();
     return 0;

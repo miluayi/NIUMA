@@ -58,24 +58,24 @@ StartupResult StartupUseCase::prepare(const std::function<QString()> &selectWork
     result.workDir = workDir;
     result.workDirInitialized = !workDir.isEmpty();
 
-    // Give tasks from older releases a recoverable info file without replacing
-    // an existing copy. A missing database can later be rebuilt by scan/import.
+    // Reconcile achievements in task records before scanning for new folders.
     if (result.databaseInitialized && result.workDirInitialized) {
         TaskFilter all;
         all.pageSize = 0;
         const QList<Task> tasks = TaskDao(DatabaseManager::instance().database()).findByFilter(all);
         for (const Task &task : tasks) {
-            if (!task.folderPath.isEmpty() && QFileInfo::exists(task.folderPath)
-                && !QFileInfo::exists(TaskInfoFile::path(task.folderPath))) {
-                if (!TaskInfoFile::write(task)) {
-                    Logger::instance().warn(QStringLiteral("旧任务信息文件补建失败: %1").arg(task.folderPath));
-                }
-            }
+            if (!task.folderPath.isEmpty() && QFileInfo(task.folderPath).isDir()
+                && !TaskInfoFile::reconcileAchievement(task))
+                Logger::instance().warn(QStringLiteral("任务成果信息同步失败: %1").arg(task.folderPath));
         }
         const QList<Task> deletedTasks =
             TaskDao(DatabaseManager::instance().database()).findDeleted();
         for (const Task &task : deletedTasks) {
-            if (task.folderPath.isEmpty() || !QFileInfo::exists(task.folderPath)) continue;
+            if (task.folderPath.isEmpty() || !QFileInfo(task.folderPath).isDir()) continue;
+            if (!TaskInfoFile::reconcileAchievement(task)) {
+                Logger::instance().warn(QStringLiteral("回收站任务成果信息同步失败: %1").arg(task.folderPath));
+                continue;
+            }
             const auto saved = TaskInfoFile::read(task.folderPath);
             const bool needsBackfill = !QFileInfo::exists(TaskInfoFile::path(task.folderPath))
                 || (saved && saved->taskNo == task.taskNo && saved->title == task.title

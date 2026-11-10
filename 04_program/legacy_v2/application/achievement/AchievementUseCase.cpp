@@ -4,6 +4,33 @@
 #include "database/TaskDao.h"
 #include "database/SettingsDao.h"
 #include "models/ExportConfig.h"
+#include "service/TaskInfoFile.h"
+#include <QDir>
+
+namespace {
+template <typename Mutation>
+int persistAchievement(int taskId, Mutation mutate)
+{
+    QSqlDatabase db = DatabaseManager::instance().database();
+    const auto task = TaskDao(db).findById(taskId);
+    if (!task || !db.transaction()) return -1;
+
+    AchievementDao dao(db);
+    const int result = mutate(dao);
+    const bool hasFolder = !task->folderPath.isEmpty() && QDir(task->folderPath).exists();
+    if (result <= 0 || (hasFolder && !TaskInfoFile::syncAchievement(*task))) {
+        db.rollback();
+        return -1;
+    }
+    if (!db.commit()) {
+        db.rollback();
+        if (hasFolder) TaskInfoFile::syncAchievement(*task);
+        return -1;
+    }
+    return result;
+}
+} // namespace
+
 QList<Achievement> AchievementUseCase::findByYear(int year) const
 {
     return AchievementDao(DatabaseManager::instance().database()).findByYear(year);
@@ -34,17 +61,24 @@ AchievementYearStats AchievementUseCase::stats(int year) const
 
 int AchievementUseCase::create(const Achievement &achievement) const
 {
-    return AchievementDao(DatabaseManager::instance().database()).insert(achievement);
+    return persistAchievement(achievement.taskId, [&](AchievementDao &dao) {
+        return dao.insert(achievement);
+    });
 }
 
 bool AchievementUseCase::update(const Achievement &achievement) const
 {
-    return AchievementDao(DatabaseManager::instance().database()).update(achievement);
+    return persistAchievement(achievement.taskId, [&](AchievementDao &dao) {
+        return dao.update(achievement);
+    }) > 0;
 }
 
 bool AchievementUseCase::remove(int achievementId) const
 {
-    return AchievementDao(DatabaseManager::instance().database()).deleteById(achievementId);
+    const auto record = AchievementDao(DatabaseManager::instance().database()).findById(achievementId);
+    return record && persistAchievement(record->taskId, [&](AchievementDao &dao) {
+        return dao.deleteById(achievementId);
+    }) > 0;
 }
 
 WordExport::ExportResult AchievementUseCase::exportAnnualReport(int year, const QString &outputPath) const

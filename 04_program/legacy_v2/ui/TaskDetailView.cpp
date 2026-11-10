@@ -727,6 +727,7 @@ QFrame* TaskDetailView::buildAchievementSection()
         if (!task || (!achievement && !task->isCompleted())) return;
 
         AchievementDialog dialog(taskId_, task->category, task->title, this, achievement);
+        if (task->isCompleted()) dialog.setKeyAchievementDefault(task->isKeyTask);
         if (dialog.exec() == QDialog::Accepted) {
             loadAchievement();
             emit taskUpdated();
