@@ -45,6 +45,8 @@
 
 namespace {
 
+constexpr int kTaskIdRole = Qt::UserRole + 1;
+
 // ============================================================================
 // 成果标记列自定义委托：渲染"重点"(橙)/"年度"(蓝)彩色标签
 // ============================================================================
@@ -53,6 +55,11 @@ public:
     explicit AchievementTagDelegate(QObject *parent = nullptr)
         : QStyledItemDelegate(parent)
     {
+    }
+
+    static int columnWidth()
+    {
+        return 2 * badgeWidth(QFontMetrics(badgeFont())) + kTagGap + 2 * Spacing::MD;
     }
 
     void paint(QPainter *painter, const QStyleOptionViewItem &option,
@@ -79,21 +86,15 @@ public:
 
         // 标签绘制参数
         const int tagHeight = 22;
-        const int tagPaddingH = 8;  // 水平内边距
-        const int tagGap = 6;       // 标签间距
         const int borderRadius = 4;
 
-        QFont tagFont(QStringLiteral("Segoe UI"));
-        tagFont.setPixelSize(14);
-        tagFont.setStyleName(QStringLiteral("Normal"));
+        const QFont tagFont = badgeFont();
         painter->setFont(tagFont);
-        QFontMetrics fm(tagFont);
-
-        // 垂直居中
-        int cellTop = option.rect.top();
-        int cellHeight = option.rect.height();
-        int y = cellTop + (cellHeight - tagHeight) / 2;
-        int x = option.rect.left() + 12;  // 左边距 12px
+        const int tagWidth = badgeWidth(QFontMetrics(tagFont));
+        const int groupWidth = tags.size() * tagWidth + (tags.size() - 1) * kTagGap;
+        const QPointF center = QRectF(option.rect).center();
+        const qreal y = center.y() - tagHeight / 2.0;
+        qreal x = center.x() - groupWidth / 2.0;
 
         for (const QString &tag : tags) {
             QString text;
@@ -112,8 +113,6 @@ public:
                 continue;
             }
 
-            int textWidth = fm.horizontalAdvance(text);
-            int tagWidth = textWidth + tagPaddingH * 2;
             QRectF tagRect(x, y, tagWidth, tagHeight);
 
             // 绘制圆角背景
@@ -125,23 +124,27 @@ public:
             painter->setPen(textColor);
             painter->drawText(tagRect, Qt::AlignCenter, text);
 
-            x += tagWidth + tagGap;
+            x += tagWidth + kTagGap;
         }
 
         painter->restore();
     }
 
-    QSize sizeHint(const QStyleOptionViewItem &option,
-                   const QModelIndex &index) const override
+private:
+    static constexpr int kTagGap = 6;
+
+    static QFont badgeFont()
     {
-        Q_UNUSED(option);
-        QStringList tags = index.data(Qt::UserRole).toStringList();
-        if (tags.isEmpty()) {
-            return QSize(60, 32);
-        }
-        // 粗略估算宽度
-        int width = tags.size() * 50 + 12;
-        return QSize(width, 32);
+        QFont font(QStringLiteral("Segoe UI"));
+        font.setPixelSize(14);
+        font.setStyleName(QStringLiteral("Normal"));
+        return font;
+    }
+
+    static int badgeWidth(const QFontMetrics &metrics)
+    {
+        return qMax(metrics.horizontalAdvance(QStringLiteral("重点")),
+                    metrics.horizontalAdvance(QStringLiteral("年度"))) + 2 * Spacing::SM;
     }
 };
 
@@ -401,6 +404,11 @@ void AchievementView::setupTable(QVBoxLayout *mainLayout)
                                       << QStringLiteral("\u6807\u8BB0")            // 标记
                                       << QStringLiteral("操作"));
     tableView_->setModel(model_);
+    connect(tableView_, &QTableView::clicked, this, [this](const QModelIndex &index) {
+        if (index.column() == ColActions) return;
+        const int taskId = index.sibling(index.row(), ColTaskNo).data(kTaskIdRole).toInt();
+        if (taskId > 0) emit taskClicked(taskId);
+    });
 
     // 标记列使用自定义委托
     tableView_->setItemDelegateForColumn(ColTag, new AchievementTagDelegate(this));
@@ -408,6 +416,7 @@ void AchievementView::setupTable(QVBoxLayout *mainLayout)
     // 表头设置
     QHeaderView *header = tableView_->horizontalHeader();
     header->setSectionResizeMode(QHeaderView::Interactive);
+    header->setSectionResizeMode(ColTag, QHeaderView::Fixed);
     header->setSectionResizeMode(ColActions, QHeaderView::Fixed);
     header->setStretchLastSection(false);
     header->setMinimumSectionSize(60);
@@ -442,6 +451,7 @@ void AchievementView::setColumnWidths()
     tableView_->setColumnWidth(ColResultCount, 90);    // 成果数量
     tableView_->setColumnWidth(ColResultAmount, 110);  // 成果金额
     tableView_->setColumnWidth(ColCreateTime, 110);    // 完成时间
+    tableView_->setColumnWidth(ColTag, AchievementTagDelegate::columnWidth());
     tableView_->setColumnWidth(ColActions, 128);     // 操作
 }
 
@@ -515,6 +525,7 @@ void AchievementView::fillTablePage()
 
         // 编号
         auto *noItem = new QStandardItem(item.taskNo);
+        noItem->setData(ach.taskId, kTaskIdRole);
         noItem->setEditable(false);
         noItem->setTextAlignment(Qt::AlignCenter);
         noItem->setData(QColor(0x94, 0xA3, 0xB8), Qt::ForegroundRole);  // #94A3B8

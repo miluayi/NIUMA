@@ -3,9 +3,12 @@
 #include <QDir>
 #include <QFile>
 #include <QFrame>
+#include <QImage>
 #include <QKeyEvent>
 #include <QLabel>
 #include <QLineEdit>
+#include <QListWidget>
+#include <QMouseEvent>
 #include <QPushButton>
 #include <QScrollArea>
 #include <QSqlQuery>
@@ -16,7 +19,7 @@
 
 #include "AchievementDialog.h"
 #include "AchievementView.h"
-#include "AppTheme.h"
+#include "MainWindow.h"
 #include "application/achievement/AchievementUseCase.h"
 #include "DatabaseManager.h"
 #include "SettingsDao.h"
@@ -32,7 +35,7 @@
 
 namespace {
 
-TaskResult createTask(const QString &title)
+TaskResult createTask(const QString &title, bool isKeyTask = false)
 {
     Task task;
     task.title = title;
@@ -40,6 +43,7 @@ TaskResult createTask(const QString &title)
     task.source = QStringLiteral("S08 来源");
     task.handler = QStringLiteral("本人");
     task.description = QStringLiteral("S08 任务说明");
+    task.isKeyTask = isKeyTask;
     TaskService service;
     return service.createTask(task);
 }
@@ -115,6 +119,54 @@ bool answerDelete(QPushButton *button, bool confirm)
     return answered;
 }
 
+bool centeredTags(QTableView *table, int row, int expectedCount)
+{
+    const QRect cell = table->visualRect(table->model()->index(row, 6));
+    const QImage image = table->viewport()->grab(cell).toImage();
+    int left = image.width();
+    int right = -1;
+    int count = 0;
+    bool previous = false;
+    for (int x = 0; x < image.width(); ++x) {
+        bool badge = false;
+        for (int y = 0; y < image.height(); ++y) {
+            const QRgb pixel = image.pixel(x, y);
+            if (pixel == qRgb(255, 247, 237) || pixel == qRgb(239, 246, 255)) {
+                badge = true;
+                break;
+            }
+        }
+        if (badge) {
+            if (!previous) ++count;
+            left = qMin(left, x);
+            right = x;
+        }
+        previous = badge;
+    }
+    const int rightInset = image.width() - 1 - right;
+    return count == expectedCount && left >= 10 && rightInset >= 10
+        && qAbs(left - rightInset) <= 1;
+}
+
+bool opensTaskDetail(QTableView *table, int row, const QString &expectedTitle)
+{
+    bool opened = false;
+    QObject timerContext;
+    QTimer::singleShot(0, &timerContext, [&]() {
+        auto *dialog = qobject_cast<TaskDetailView *>(QApplication::activeModalWidget());
+        if (!dialog) return;
+        const auto *title = dialog->findChild<QLabel *>("appUiDetailTitle");
+        opened = title && title->text() == expectedTitle;
+        dialog->reject();
+    });
+    const QPoint point = table->visualRect(table->model()->index(row, 1)).center();
+    QMouseEvent press(QEvent::MouseButtonPress, point, Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+    QMouseEvent release(QEvent::MouseButtonRelease, point, Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
+    QApplication::sendEvent(table->viewport(), &press);
+    QApplication::sendEvent(table->viewport(), &release);
+    return opened;
+}
+
 } // namespace
 
 int main(int argc, char *argv[])
@@ -158,17 +210,32 @@ int main(int argc, char *argv[])
     amount->setText(QStringLiteral("12.34"));
     dialog.findChild<QLineEdit *>(QStringLiteral("achievementResultCountEdit"))->setText(QStringLiteral("3"));
     annual->setChecked(true);
-    key->setChecked(true);
+    if (key->isChecked()) return 42;
     if (!QMetaObject::invokeMethod(saveShortcut, "activated", Qt::DirectConnection)) return 8;
     AchievementDao achievementDao(DatabaseManager::instance().database());
     auto directAchievement = achievementDao.findByTaskId(directTask.taskId);
     if (!directAchievement.has_value() || directAchievement->resultAmount != 1234
-        || !directAchievement->isAnnual || !directAchievement->isKeyAchievement) return 9;
+        || !directAchievement->isAnnual || directAchievement->isKeyAchievement) return 9;
     TaskService taskService;
     if (!taskService.completeTask(directTask.taskId).ok) return 10;
 
-    TaskResult triggerTask = createTask(QStringLiteral("S08 完成触发任务"));
+    const QString triggerTitle = QStringLiteral("S08 完成触发任务");
+    TaskResult triggerTask = createTask(triggerTitle, true);
     if (!triggerTask.ok) return 11;
+    TaskDetailView skipKey(triggerTask.taskId);
+    bool keyWasChecked = false;
+    QTimer::singleShot(0, &skipKey, [&]() {
+        auto *dialog = qobject_cast<AchievementDialog *>(QApplication::activeModalWidget());
+        if (!dialog) return;
+        auto *check = dialog->findChild<QCheckBox *>("achievementKeyCheck");
+        keyWasChecked = check && check->isChecked();
+        dialog->reject();
+    });
+    if (!QMetaObject::invokeMethod(&skipKey, "onCompleteClicked", Qt::DirectConnection)
+        || !keyWasChecked || achievementDao.findByTaskId(triggerTask.taskId)) return 43;
+    const auto skippedTask = taskService.getTaskById(triggerTask.taskId);
+    if (!skippedTask || !skippedTask->isCompleted() || !taskService.cancelComplete(triggerTask.taskId).ok) return 44;
+
     TaskDetailView detail(triggerTask.taskId);
     detail.show();
     saveTriggeredAchievement();
@@ -176,23 +243,31 @@ int main(int argc, char *argv[])
     auto completedTask = taskService.getTaskById(triggerTask.taskId);
     auto triggeredAchievement = achievementDao.findByTaskId(triggerTask.taskId);
     if (!completedTask.has_value() || !completedTask->isCompleted() || !triggeredAchievement.has_value()
-        || triggeredAchievement->resultAmount != 950 || !triggeredAchievement->isAnnual) return 13;
+        || triggeredAchievement->resultAmount != 950 || !triggeredAchievement->isAnnual
+        || !triggeredAchievement->isKeyAchievement) return 13;
 
-    AchievementView view;
-    AppTheme::apply(app, view);
-    view.resize(1200, 700);
-    view.show();
-    view.refresh();
+    MainWindow window;
+    window.resize(1440, 900);
+    window.show();
+    auto *sidebar = window.findChild<QListWidget *>("sidebar");
+    auto *view = window.findChild<AchievementView *>();
+    if (!sidebar || !view) return 45;
+    sidebar->setCurrentRow(4);
     app.processEvents();
-    auto *table = view.findChild<QTableView *>(QStringLiteral("achievementTable"));
-    auto *total = view.findChild<QLabel *>(QStringLiteral("achievementTotalStat"));
-    auto *amountStat = view.findChild<QLabel *>(QStringLiteral("achievementAmountStat"));
-    auto *keyStat = view.findChild<QLabel *>(QStringLiteral("achievementKeyStat"));
+    auto *table = view->findChild<QTableView *>(QStringLiteral("achievementTable"));
+    auto *total = view->findChild<QLabel *>(QStringLiteral("achievementTotalStat"));
+    auto *amountStat = view->findChild<QLabel *>(QStringLiteral("achievementAmountStat"));
+    auto *keyStat = view->findChild<QLabel *>(QStringLiteral("achievementKeyStat"));
     if (!table || !total || !amountStat || !keyStat || table->model()->rowCount() != 2
         || total->text() != QStringLiteral("2") || amountStat->text() != QStringLiteral("¥21.84")
         || keyStat->text() != QStringLiteral("1")) return 14;
     if (table->model()->index(0, 1).data(Qt::TextAlignmentRole).toInt() != Qt::AlignCenter
         || table->model()->index(0, 2).data(Qt::TextAlignmentRole).toInt() != Qt::AlignCenter) return 26;
+    for (int row = 0; row < 2; ++row) {
+        const bool direct = table->model()->index(row, 1).data().toString() == directAchievement->workContent;
+        if (!centeredTags(table, row, direct ? 1 : 2)) return 46;
+        if (!opensTaskDetail(table, row, direct ? QStringLiteral("S08 直接登记任务") : triggerTitle)) return 47;
+    }
 
     ExportConfig config;
     config.reportTitle = QStringLiteral("S08 测试总结");
@@ -222,6 +297,7 @@ int main(int argc, char *argv[])
     app.processEvents();
     if (!modify->isVisible() || !remove->isVisible() || modify->text() != QStringLiteral("修改成果")
         || modify->y() != remove->y() || modify->geometry().right() >= remove->x()
+        || remove->y() < 12 || remove->y() != section->width() - remove->geometry().right() - 1
         || modify->height() != headerEdit->height() || remove->height() != headerDelete->height()
         || modify->font().pixelSize() != headerEdit->font().pixelSize()
         || remove->styleSheet() != headerDelete->styleSheet()
@@ -235,7 +311,7 @@ int main(int argc, char *argv[])
         || detailEdited->workContent != detailContent || detailEdited->resultAmount != 2250) return 33;
     recorded.close();
 
-    view.refresh();
+    view->refresh();
     app.processEvents();
     auto *model = table->model();
     if (model->columnCount() != 8 || model->headerData(7, Qt::Horizontal).toString() != QStringLiteral("操作")
@@ -251,7 +327,7 @@ int main(int argc, char *argv[])
     auto *rowEdit = rowAction(detailContent, "achievementRowEdit");
     const QString annualContent = QStringLiteral("年度页面编辑成果");
     if (!rowEdit || !rowEdit->isVisible()
-        || !view.grab().save(QDir(root).filePath("achievement-annual-actions.png"))
+        || !view->grab().save(QDir(root).filePath("achievement-annual-actions.png"))
         || !editAchievement(rowEdit, *detailEdited, annualContent, QStringLiteral("30.05"),
                             QDir(root).filePath("achievement-edit-annual.png"))) return 35;
     const auto annualEdited = achievementDao.findByTaskId(directTask.taskId);
@@ -263,7 +339,7 @@ int main(int argc, char *argv[])
     if (!rowDelete || !answerDelete(rowDelete, false) || !achievementDao.findByTaskId(directTask.taskId)
         || !answerDelete(rowDelete, true) || achievementDao.findByTaskId(directTask.taskId)
         || table->model()->rowCount() != 1 || amountStat->text() != QStringLiteral("¥9.50")
-        || keyStat->text() != QStringLiteral("0")) return 37;
+        || keyStat->text() != QStringLiteral("1")) return 37;
     const auto unchangedTask = taskService.getTaskById(directTask.taskId);
     if (!unchangedTask || !unchangedTask->isCompleted()) return 38;
 

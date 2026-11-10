@@ -32,6 +32,7 @@ public:
     AchievementDialog(int taskId, const QString &taskCategory,
                       const QString &taskTitle, QWidget *parent = nullptr,
                       const std::optional<Achievement> &existing = std::nullopt);
+    void setKeyAchievementDefault(bool checked);
     static bool confirmDelete(int achievementId, QWidget *parent);
 
     /**

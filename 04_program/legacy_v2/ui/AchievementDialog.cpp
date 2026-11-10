@@ -68,6 +68,11 @@ AchievementDialog::AchievementDialog(int taskId, const QString &taskCategory,
     }
 }
 
+void AchievementDialog::setKeyAchievementDefault(bool checked)
+{
+    if (!existing_) keyCheck_->setChecked(checked);
+}
+
 bool AchievementDialog::confirmDelete(int achievementId, QWidget *parent)
 {
     const int answer = StyledMessageBox::question(

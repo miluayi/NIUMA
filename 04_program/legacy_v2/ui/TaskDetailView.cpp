@@ -686,17 +686,14 @@ QFrame* TaskDetailView::buildAchievementSection()
         "#achievementSection { background: #FFFFFF; border: none; "
         "border-radius: 12px; }");
     QVBoxLayout *layout = new QVBoxLayout(achievementFrame_);
-    layout->setContentsMargins(Spacing::XL, Spacing::LG, Spacing::XL, Spacing::LG);
+    layout->setContentsMargins(Spacing::XL, Spacing::XL, Spacing::XL, Spacing::LG);
     layout->setSpacing(Spacing::SM);
 
-    // 区块标题
+    auto *headerRow = new QHBoxLayout;
+    headerRow->setSpacing(Spacing::SM);
     QLabel *title = new QLabel(QStringLiteral("\u6210\u679c\u4fe1\u606f"), achievementFrame_);  // 成果信息
     title->setStyleSheet("font-size: 14px; font-weight: 400; color: #0F172A; border: none;");
-    layout->addWidget(title);
-
-    // 成果内容容器
-    QHBoxLayout *contentRow = new QHBoxLayout();
-    contentRow->setSpacing(Spacing::SM);
+    headerRow->addWidget(title, 1);
 
     achievementLabel_ = new QLabel(achievementFrame_);
     achievementLabel_->setWordWrap(true);
@@ -717,10 +714,11 @@ QFrame* TaskDetailView::buildAchievementSection()
     deleteAchievementBtn_->setStyleSheet(kDetailDeleteAction);
     deleteAchievementBtn_->hide();
 
-    contentRow->addWidget(achievementLabel_, 1);
-    contentRow->addWidget(addAchievementBtn_, 0, Qt::AlignVCenter);
-    contentRow->addWidget(deleteAchievementBtn_, 0, Qt::AlignVCenter);
-    layout->addLayout(contentRow);
+    headerRow->addWidget(addAchievementBtn_, 0, Qt::AlignVCenter);
+    headerRow->addWidget(deleteAchievementBtn_, 0, Qt::AlignVCenter);
+    layout->addLayout(headerRow);
+    layout->addWidget(achievementLabel_);
+    layout->addStretch();
 
     connect(addAchievementBtn_, &QPushButton::clicked, this, [this]() {
         TaskDetailUseCase useCase;
@@ -1011,6 +1009,7 @@ void TaskDetailView::onCompleteClicked()
             // T4.4: 完成后弹出成果填写弹窗（跳过则留待日后补录）
             if (!useCase.findAchievement(taskId_).has_value()) {
                 AchievementDialog dialog(taskId_, task.category, task.title, this);
+                dialog.setKeyAchievementDefault(task.isKeyTask);
                 dialog.exec();  // 保存则入库，跳过则任务仍为已完成
             }
         }

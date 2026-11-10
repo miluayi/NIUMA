@@ -42,6 +42,7 @@ public:
 
 signals:
     void exportRequested(int year);
+    void taskClicked(int taskId);
 
 private slots:
     void onYearChanged(int index);

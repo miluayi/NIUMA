@@ -477,6 +477,7 @@ void MainWindow::setupAchievementPage()
     // Connect signals
     connect(achievementView_, &AchievementView::exportRequested,
             this, &MainWindow::onExportAchievements);
+    connect(achievementView_, &AchievementView::taskClicked, this, &MainWindow::onTaskClicked);
 
     // Initial refresh
     achievementView_->refresh();
