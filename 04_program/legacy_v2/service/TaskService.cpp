@@ -95,7 +95,7 @@ TaskResult TaskService::createTask(const Task &task, const QStringList &sourceFi
 
     // 复制源文件到任务目录（后台异步，避免大文件阻塞 UI）
     if (!sourceFiles.isEmpty() && !newTask.folderPath.isEmpty()) {
-        FileService::copyFilesToTaskDirAsync(sourceFiles, newTask.folderPath);
+        FileService::copyFilesToTaskDirAsync(sourceFiles, newTask.folderPath, newTask.hasSubdirs);
     }
 
     // 记录操作日志

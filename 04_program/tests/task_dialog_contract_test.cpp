@@ -11,18 +11,64 @@
 #include <QLineEdit>
 #include <QComboBox>
 #include <QPushButton>
+#include <QRadioButton>
 #include <QShortcut>
 #include <QSqlQuery>
+#include <QTemporaryDir>
 #include <QTextEdit>
+#include <QThreadPool>
 #include <QTimer>
 
 #include "DatabaseManager.h"
 #include "TaskCreateDialog.h"
 #include "TaskDetailView.h"
 #include "TaskEditDialog.h"
+#include "database/TaskDao.h"
+#include "service/FileService.h"
 #include "ui/widgets/DragDropArea.h"
 #include "service/TaskService.h"
 #include "utils/PathUtil.h"
+
+namespace {
+bool verifyPastedAttachment(const QString &sourcePath, bool structured, const QString &capturePath = {})
+{
+    TaskCreateDialog dialog;
+    dialog.show();
+    auto *title = dialog.findChild<QLineEdit *>("taskTitleEdit");
+    auto *upload = dialog.findChild<DragDropArea *>("taskAttachmentArea");
+    auto *save = dialog.findChild<QPushButton *>("btnPrimary");
+    if (!title || !upload || !save || !upload->pasteFiles({sourcePath})) return false;
+    title->setText(structured ? QStringLiteral("子目录附件") : QStringLiteral("扁平目录附件"));
+    if (structured) {
+        QRadioButton *subdirs = nullptr;
+        for (auto *radio : dialog.findChildren<QRadioButton *>()) {
+            if (radio->text() == QStringLiteral("创建子目录")) subdirs = radio;
+        }
+        if (!subdirs) return false;
+        subdirs->click();
+    }
+    QApplication::processEvents();
+    if (!capturePath.isEmpty() && !dialog.grab().save(capturePath)) return false;
+
+    QString taskNo;
+    QObject::connect(&dialog, &TaskCreateDialog::taskCreated, &dialog, [&](const QString &number) {
+        taskNo = number;
+    });
+    save->click();
+    if (dialog.result() != QDialog::Accepted || !QThreadPool::globalInstance()->waitForDone(5000)) return false;
+    const auto task = TaskDao(DatabaseManager::instance().database()).findByTaskNo(taskNo);
+    if (!task || task->folderPath.isEmpty() || task->hasSubdirs != structured) return false;
+
+    const QString fileName = QFileInfo(sourcePath).fileName();
+    const QString rootPath = QDir(task->folderPath).filePath(fileName);
+    const QString originalDir = QDir(task->folderPath).filePath(QStringLiteral("01_原始资料"));
+    QFile stored(structured ? QDir(originalDir).filePath(fileName) : rootPath);
+    QFile source(sourcePath);
+    return stored.open(QIODevice::ReadOnly) && source.open(QIODevice::ReadOnly)
+        && stored.readAll() == QByteArray("test attachment") && source.readAll() == QByteArray("test attachment")
+        && (structured ? !QFile::exists(rootPath) : !QDir(originalDir).exists());
+}
+} // namespace
 
 int main(int argc, char *argv[])
 {
@@ -206,6 +252,12 @@ int main(int argc, char *argv[])
         || service.getTaskById(taskId)->status != QStringLiteral("已删除")) return 23;
     if (!service.restoreTask(taskId).ok
         || service.getTaskById(taskId)->status != QStringLiteral("进行中")) return 24;
+
+    const QTemporaryDir workRoot(QDir(root).filePath("attachment-work-XXXXXX"));
+    if (!workRoot.isValid() || !FileService().initializeWorkDir(workRoot.path()).success) return 42;
+    if (!verifyPastedAttachment(attachmentFile.fileName(), true,
+            QDir(root).filePath("task-create-structured-attachment.png"))) return 43;
+    if (!verifyPastedAttachment(attachmentFile.fileName(), false)) return 44;
 
     DatabaseManager::instance().close();
     return 0;

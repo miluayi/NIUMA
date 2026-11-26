@@ -98,8 +98,9 @@ public:
     // ===== 文件复制 =====
     static bool copyFilesToTaskDir(const QStringList &sourceFiles, const QString &taskDir);
 
-    /** @brief 后台异步复制文件到任务目录（QtConcurrent::run） */
-    static QFuture<bool> copyFilesToTaskDirAsync(const QStringList &sourceFiles, const QString &taskDir);
+    /** @brief 后台复制附件，可归入任务的原始资料子目录 */
+    static QFuture<bool> copyFilesToTaskDirAsync(const QStringList &sourceFiles, const QString &taskDir,
+                                                bool useOriginalMaterials = false);
 
 private:
     /** @brief 根据状态返回对应的根目录名 */

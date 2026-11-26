@@ -45,6 +45,8 @@ const QString FileService::kDirRecycleBin = QStringLiteral("05_回收站");
 const QString FileService::kDirOtherHandler = QStringLiteral("06_他人办理");
 
 namespace {
+const QString kOriginalMaterialsDir = QStringLiteral("01_原始资料");
+
 QMutex &copyMutex() { static QMutex mutex; return mutex; }
 QHash<QString, int> &pendingCopies() { static QHash<QString, int> copies; return copies; }
 bool copyPending(const QString &path)
@@ -204,7 +206,7 @@ bool FileService::createTaskFolder(const Task &task)
     // 创建子目录（has_subdirs=1 时）
     if (task.hasSubdirs) {
         QStringList subDirs = {
-            QStringLiteral("01_原始资料"),
+            kOriginalMaterialsDir,
             QStringLiteral("02_工作底稿"),
             QStringLiteral("03_反馈成果")
         };
@@ -583,17 +585,20 @@ bool FileService::copyFilesToTaskDir(const QStringList &sourceFiles, const QStri
     return allOk;
 }
 
-QFuture<bool> FileService::copyFilesToTaskDirAsync(const QStringList &sourceFiles, const QString &taskDir)
+QFuture<bool> FileService::copyFilesToTaskDirAsync(const QStringList &sourceFiles, const QString &taskDir,
+                                                 bool useOriginalMaterials)
 {
+    const QString destination = useOriginalMaterials
+        ? PathUtil::join(taskDir, kOriginalMaterialsDir) : taskDir;
+    // A copy into a subdirectory still prevents moving the whole task folder.
     const QString key = QDir::cleanPath(taskDir);
     {
         QMutexLocker lock(&copyMutex());
         ++pendingCopies()[key];
     }
-    return QtConcurrent::run([sourceFiles, taskDir]() -> bool {
-        const bool result = copyFilesToTaskDir(sourceFiles, taskDir);
+    return QtConcurrent::run([sourceFiles, destination, key]() -> bool {
+        const bool result = copyFilesToTaskDir(sourceFiles, destination);
         QMutexLocker lock(&copyMutex());
-        const QString key = QDir::cleanPath(taskDir);
         if (--pendingCopies()[key] == 0) pendingCopies().remove(key);
         return result;
     });
